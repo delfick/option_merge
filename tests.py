@@ -40,26 +40,36 @@ describe TestCase, "MergedOptions":
         self.assertEqual(merged.options, [copy2, copy1])
         fake_deepcopy.assert_has_calls([mock.call(options1), mock.call(options2)])
 
-    @mock.patch("option_merge.deepcopy")
-    it "has method for adding more options", fake_deepcopy:
-        options1 = mock.Mock(name="options1")
-        options2 = mock.Mock(name="options2")
-        copy1 = mock.Mock(name="copy1")
-        copy2 = mock.Mock(name="copy2")
+    describe "Adding more options":
 
-        def mapper(opts):
-            if opts is options1: return copy1
-            if opts is options2: return copy2
-        fake_deepcopy.side_effect = mapper
+        @mock.patch("option_merge.deepcopy")
+        it "has method for adding more options", fake_deepcopy:
+            options1 = mock.Mock(name="options1")
+            options2 = mock.Mock(name="options2")
+            copy1 = mock.Mock(name="copy1")
+            copy2 = mock.Mock(name="copy2")
 
-        merged = MergedOptions()
-        merged.update(options1)
-        self.assertEqual(merged.options, [copy1])
-        fake_deepcopy.assert_has_calls(mock.call(options1))
+            def mapper(opts):
+                if opts is options1: return copy1
+                if opts is options2: return copy2
+            fake_deepcopy.side_effect = mapper
 
-        merged.update(options2)
-        self.assertEqual(merged.options, [copy2, copy1])
-        fake_deepcopy.assert_has_calls(mock.call(options2))
+            merged = MergedOptions()
+            merged.update(options1)
+            self.assertEqual(merged.options, [copy1])
+            fake_deepcopy.assert_has_calls(mock.call(options1))
+
+            merged.update(options2)
+            self.assertEqual(merged.options, [copy2, copy1])
+            fake_deepcopy.assert_has_calls(mock.call(options2))
+
+        it "Works when there is a prefix":
+            options = MergedOptions.using({"a": {"b": 1, "c": 2}})
+            a_opt = options["a"]
+            self.assertEqual(sorted(a_opt.items()), sorted([("b", 1), ("c", 2)]))
+
+            a_opt.update({"c": 3})
+            self.assertEqual(a_opt["c"], 3)
 
     describe "Getting an item":
         it "raises a KeyError if the key doesn't exist":
@@ -205,6 +215,13 @@ describe TestCase, "MergedOptions":
             it "returns dot prefixed string with key after existing prefix":
                 self.merged.prefix = ['one', 'two']
                 self.assertEqual(self.merged.prefix_key('blah'), 'one.two.blah')
+
+            it "returns without leading dot if no path":
+                self.merged.prefix = ['one']
+                self.assertEqual(self.merged.prefix_key(''), 'one')
+
+                self.merged.prefix = ['one', 'two']
+                self.assertEqual(self.merged.prefix_key(''), 'one.two')
 
         describe "Making new MergedOptions":
             it "uses same options and overrides":

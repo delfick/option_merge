@@ -73,7 +73,16 @@ class MergedOptions(Mapping):
 
     def update(self, options):
         """Add new options"""
-        self.options.insert(0, deepcopy(options))
+        if not self.prefix:
+            self.options.insert(0, deepcopy(options))
+        else:
+            for value in self.values_for(""):
+                if isinstance(value, dict):
+                    value.update(options)
+                else:
+                    value.options.insert(0, deepcopy(options))
+
+                break
 
     def values_for(self, path):
         """
@@ -165,7 +174,10 @@ class MergedOptions(Mapping):
 
     def prefix_key(self, key):
         """Return a key representing prefix on this class and extra key"""
-        return '.'.join((self.prefix or []) + key.split('.'))
+        prefix = self.prefix or []
+        if key:
+            prefix = list(prefix) + key.split('.')
+        return '.'.join(prefix)
 
     def after_prefix(self, opts, prefix=NotFound, silent=False, create=False):
         """

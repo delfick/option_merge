@@ -256,7 +256,7 @@ class MergedOptions(Mapping):
 
     def __iter__(self):
         """Iterate over the keys"""
-        return self.keys()
+        return iter(self.keys())
 
     def __len__(self):
         """Get number of keys we have"""

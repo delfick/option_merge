@@ -11,11 +11,11 @@ Either the classmethod shortcut::
 
     options = MergedOptions.using(options1, options2)
 
-Or with the add_options method::
+Or with the update method::
 
     options = MergedOptions()
-    options.add_options(options1)
-    options.add_options(options2)
+    options.update(options1)
+    options.update(options2)
 
 And a seperate override with __setitem__ syntax::
 

@@ -277,7 +277,7 @@ class MergedOptions(Mapping):
 
             result[last] = self[key]
             if isinstance(result[last], MergedOptions):
-                result[last] = result[last].items()
+                result[last] = dict(result[last].items())
 
-        return top
+        return top.items()
 

@@ -336,17 +336,18 @@ describe TestCase, "MergedOptions":
                 self.assertEqual(len(self.merged), 4)
 
     describe "Getting items":
-        it "combines everything into one dictionary":
-            self.merged.add_options({'a':1, 'b':{'c':9}})
-            self.merged.add_options({'a':{'c':4}, 'b':4})
+        it "combines everything into one key,value list":
+            self.merged.update({'a':1, 'b':{'c':9}})
+            self.merged.update({'a':{'c':4}, 'b':4})
             self.merged['a'] = {'c':5, "d":8}
-            self.assertEqual(self.merged.items(), {"b":4, "a":{"c":5, "d":8}})
+            print self.merged.items()
+            self.assertEqual(self.merged.items(), {"b":4, "a":{"c":5, "d":8}}.items())
 
             del self.merged['b']
-            self.assertEqual(self.merged.items(), {"b":{'c':9}, "a":{"c":5, "d":8}})
+            self.assertEqual(self.merged.items(), {"b":{'c':9}, "a":{"c":5, "d":8}}.items())
 
             del self.merged['a.c']
-            self.assertEqual(self.merged.items(), {"b":{'c':9}, "a":{"c":4, "d":8}})
+            self.assertEqual(self.merged.items(), {"b":{'c':9}, "a":{"c":4, "d":8}}.items())
 
-            self.assertEqual(self.merged.prefixed(["b"]).items(), {'c': 9})
+            self.assertEqual(self.merged.prefixed(["b"]).items(), {'c': 9}.items())
 

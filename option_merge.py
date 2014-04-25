@@ -19,8 +19,8 @@ class MergedOptions(Mapping):
     Is equivalent to::
 
         options = MergedOptions()
-        options.add_options(options1)
-        options.add_options(options2)
+        options.update(options1)
+        options.update(options2)
 
     The later an option is added, the more influence it has.
     i.e. when a key is accessed, later options are looked at first.
@@ -65,13 +65,13 @@ class MergedOptions(Mapping):
 
     @classmethod
     def using(cls, *options):
-        """Convenience for calling add_options multiple times"""
+        """Convenience for calling update multiple times"""
         merged = cls()
         for opts in options:
-            merged.add_options(opts)
+            merged.update(opts)
         return merged
 
-    def add_options(self, options):
+    def update(self, options):
         """Add new options"""
         self.options.insert(0, deepcopy(options))
 

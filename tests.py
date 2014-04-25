@@ -53,11 +53,11 @@ describe TestCase, "MergedOptions":
         fake_deepcopy.side_effect = mapper
 
         merged = MergedOptions()
-        merged.add_options(options1)
+        merged.update(options1)
         self.assertEqual(merged.options, [copy1])
         fake_deepcopy.assert_has_calls(mock.call(options1))
 
-        merged.add_options(options2)
+        merged.update(options2)
         self.assertEqual(merged.options, [copy2, copy1])
         fake_deepcopy.assert_has_calls(mock.call(options2))
 
@@ -104,8 +104,8 @@ describe TestCase, "MergedOptions":
 
     describe "Deleting an item":
         it "only deletes once":
-            self.merged.add_options({'a':1})
-            self.merged.add_options({'a':2})
+            self.merged.update({'a':1})
+            self.merged.update({'a':2})
             self.merged['a'] = 3
             self.assertEqual(self.merged['a'], 3)
 
@@ -125,15 +125,15 @@ describe TestCase, "MergedOptions":
             with self.assertRaisesRegexp(KeyError, "'a'"):
                 del self.merged['a']
 
-            self.merged.add_options({'b':1})
+            self.merged.update({'b':1})
             self.assertEqual(self.merged['b'], 1)
             del self.merged['b']
             with self.assertRaisesRegexp(KeyError, "'b'"):
                 del self.merged['b']
 
         it "can delete from a nested dict":
-            self.merged.add_options({'a':1, 'b':{'c':5}})
-            self.merged.add_options({'a':{'c':4}, 'b':{'c':6, 'd':8}})
+            self.merged.update({'a':1, 'b':{'c':5}})
+            self.merged.update({'a':{'c':4}, 'b':{'c':6, 'd':8}})
             self.merged['a'] = {'c':5}
 
             values = list(self.merged.values_for('b'))
@@ -148,8 +148,8 @@ describe TestCase, "MergedOptions":
             self.assertEqual(values, [{'d':8}])
 
         it "can delete dot seperated values":
-            self.merged.add_options({'a':1, 'b':{'c':5}})
-            self.merged.add_options({'a':{'c':4}, 'b':{'c':6, 'd':8}})
+            self.merged.update({'a':1, 'b':{'c':5}})
+            self.merged.update({'a':{'c':4}, 'b':{'c':6, 'd':8}})
             self.merged['a'] = {'c':5}
 
             values = list(self.merged.values_for('b'))
@@ -165,8 +165,8 @@ describe TestCase, "MergedOptions":
 
     describe "Getting all values for a key":
         it "finds all the values":
-            self.merged.add_options({'a':1, 'b':{'c':5}})
-            self.merged.add_options({'a':{'c':4}, 'b':4})
+            self.merged.update({'a':1, 'b':{'c':5}})
+            self.merged.update({'a':{'c':4}, 'b':4})
             self.merged['a'] = {'c':5}
             values = list(self.merged.values_for('a'))
             self.assertEqual(values, [{'c':5}, {'c':4}, 1])
@@ -287,10 +287,10 @@ describe TestCase, "MergedOptions":
 
         describe "Getting keys on a mergedOptions":
             it "returns one level of keys":
-                self.merged.add_options({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
+                self.merged.update({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
                 self.assertEqual(sorted(self.merged.keys()), sorted(["a", "t", "u"]))
 
-                self.merged.add_options({'a': 3, 'e':7})
+                self.merged.update({'a': 3, 'e':7})
                 self.assertEqual(sorted(self.merged.keys()), sorted(["a", "t", "u", "e"]))
 
                 self.merged['h'] = 10
@@ -298,10 +298,10 @@ describe TestCase, "MergedOptions":
 
             it "returns one level of keys from prefix":
                 prefixed = self.merged.prefixed('a')
-                self.merged.add_options({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
+                self.merged.update({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
                 self.assertEqual(sorted(prefixed.keys()), sorted(["b", "d"]))
 
-                self.merged.add_options({'a': {'g':6}, 'e':7})
+                self.merged.update({'a': {'g':6}, 'e':7})
                 self.assertEqual(sorted(prefixed.keys()), sorted(["b", "d", "g"]))
 
                 self.merged['a'] = {"h": 9}
@@ -309,8 +309,8 @@ describe TestCase, "MergedOptions":
 
         describe "Getting all keys":
             it "Gets full keys from everywhere":
-                self.merged.add_options({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
-                self.merged.add_options({'a': {'g':6}, 'e':7})
+                self.merged.update({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
+                self.merged.update({'a': {'g':6}, 'e':7})
                 self.merged['a'] = {"d":34, "r":9001}
                 self.assertEqual(sorted(self.merged.all_keys()), sorted(["a.b.c", "a.d", "t", "a.g", "e", "a.r"]))
 

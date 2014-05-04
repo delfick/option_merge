@@ -73,6 +73,9 @@ class MergedOptions(Mapping):
 
     def update(self, options):
         """Add new options"""
+        if options is None:
+            return
+
         if not self.prefix:
             self.options.insert(0, deepcopy(options))
         else:
@@ -292,4 +295,11 @@ class MergedOptions(Mapping):
                 result[last] = dict(result[last].items())
 
         return top.items()
+
+    def as_flat(self):
+        """Return everything as flat list of [(key, val), ...]"""
+        for key in self.all_keys():
+            val = self[key]
+            if not isinstance(val, dict) and not isinstance(val, MergedOptions):
+                yield (key, val)
 

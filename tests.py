@@ -368,3 +368,19 @@ describe TestCase, "MergedOptions":
 
             self.assertEqual(self.merged.prefixed(["b"]).items(), {'c': 9}.items())
 
+    describe "Getting as a flat dotted key, value list":
+        it "combines everything into one flat list of key value tuples":
+            self.merged.update({'a':1, 'b':{'c':9}})
+            self.merged.update({'a':{'c':4}, 'b':4})
+            self.merged['a'] = {'c':5, "d":8}
+
+            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b", 4), ("a.c", 5), ("a.d", 8)]))
+
+            del self.merged['b']
+            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.c", 5), ("a.d", 8)]))
+
+            del self.merged['a.c']
+            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.c", 4), ("a.d", 8)]))
+
+            self.assertEqual(sorted(self.merged.prefixed(["b"]).as_flat()), sorted([("c", 9)]))
+

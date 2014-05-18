@@ -8,6 +8,54 @@ class NotFound: pass
 class BadPrefix(Exception): pass
 """Used to say a prefix value is not a dictionary"""
 
+class KeyValuePairsConverter(object):
+    """Converts a list of key,value pairs to a dictionary"""
+    def __init__(self, pairs):
+        self.pairs = pairs
+
+    def convert(self):
+        """Return us a dictionary from our pairs"""
+        options = MergedOptions()
+        for key, value in self.pairs:
+            options[str(key)] = value
+        return options.overrides
+
+class AttributesConverter(object):
+    """Converts an object with particular attributes to a dictionary"""
+    def __init__(self, obj, attributes=None, include_underlined=False, lift=None):
+        self.obj = obj
+        self.lift = lift
+        self.attributes = attributes
+        self.include_underlined = include_underlined
+
+    def convert(self):
+        """Return us a MergedOptions from our attributes"""
+        options = MergedOptions()
+        attributes = self.attributes
+        if not attributes:
+            attributes = dir(self.obj)
+            if not self.include_underlined:
+                attributes = [attr for attr in attributes if not attr.startswith("_")]
+
+        for attr in attributes:
+            if hasattr(self.obj, attr):
+                options[attr] = getattr(self.obj, attr)
+
+        result = options.overrides
+        if self.lift:
+            lifted = MergedOptions()
+            lifted[self.lift] = result
+            result = lifted.overrides
+        return result
+
+class ConverterProperty(object):
+    """Creates a Property for accessing a converter"""
+    def __init__(self, converter):
+        self.converter = converter
+
+    def __get__(self, obj=None, owner=None):
+        return lambda *args, **kwargs: self.converter(*args, **kwargs).convert()
+
 class MergedOptions(Mapping):
     """
     Wrapper around multiple dictionaries to behave as one.
@@ -52,6 +100,10 @@ class MergedOptions(Mapping):
     You can also get all deeply nested keys with merged.all_keys()
     so merged.all_keys() == ["d", "a.b", "b", "a.c"]
     """
+
+    Attributes = ConverterProperty(AttributesConverter)
+    KeyValuePairs = ConverterProperty(KeyValuePairsConverter)
+
     def __init__(self, prefix=None, options=None, overrides=None):
         self.prefix = prefix
         self.options = options

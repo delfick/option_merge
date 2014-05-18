@@ -1,6 +1,9 @@
 # coding: spec
 
-from option_merge import MergedOptions, NotFound, BadPrefix
+from option_merge import (
+      MergedOptions, NotFound, BadPrefix
+    , ConverterProperty, KeyValuePairsConverter, AttributesConverter
+    )
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from unittest import TestCase
@@ -383,4 +386,123 @@ describe TestCase, "MergedOptions":
             self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.c", 4), ("a.d", 8)]))
 
             self.assertEqual(sorted(self.merged.prefixed(["b"]).as_flat()), sorted([("c", 9)]))
+
+describe TestCase, "Converters":
+    it "has a KeyValuePairs converter on MergedOptions":
+        result = MergedOptions.KeyValuePairs([("one", "two"), ("three.four", "five")])
+        self.assertEqual(result, {"one": "two", "three": {"four": "five"}})
+
+    it "has a Attributes converter on MergedOptions":
+        obj = type("obj", (object, ), {"one": "two", "two": "three", "four": "five"})
+        result = MergedOptions.Attributes(obj, ("one", "four"), lift="global")
+        self.assertEqual(result, {"global": {"one": "two", "four": "five"}})
+
+    describe "Property Converter":
+        it "takes a converter":
+            converter = mock.Mock(name="converter")
+            prop = ConverterProperty(converter)
+            self.assertIs(prop.converter, converter)
+
+        it "has a __get__ for instantiating the converter and calling convert":
+            a = mock.Mock(name="a")
+            b = mock.Mock(name="b")
+            c = mock.Mock(name="c")
+            d = mock.Mock(name="d")
+            converted = mock.Mock(name="converted")
+            instance = mock.Mock(name="instance")
+
+            converter = mock.Mock(name="converter")
+            converter.return_value = instance
+            instance.convert.return_value = converted
+
+            prop = ConverterProperty(converter)
+            self.assertIs(prop.__get__()(c, d, a=b, b=a), converted)
+
+            converter.assert_called_once_with(c, d, a=b, b=a)
+            instance.convert.assert_called_once()
+
+        it "can be used as a property":
+            givenresult = mock.Mock(name="givenresult")
+            producedresult = mock.Mock(name="producedresult")
+            class Converter(object):
+                def __init__(self, given):
+                    self.given = given
+
+                def convert(self):
+                    return (self.given, producedresult)
+
+            class Thing(object):
+                myprop = ConverterProperty(Converter)
+
+            self.assertEqual(Thing().myprop(givenresult), (givenresult, producedresult))
+
+    describe "KeyValuePairsConverter":
+        it "converts simple key value pairs into a dictionary":
+            converter = KeyValuePairsConverter([("one", "two"), (3, 4)])
+            self.assertEqual(converter.convert(), {"one": "two", "3": 4})
+
+        it "converts complex key value pairs into a dictionary":
+            converter = KeyValuePairsConverter([("one.two", "three"), ("three", "four"), ("five.six.seven", "eight"), ("five.six.nine", "ten")])
+            self.assertEqual(converter.convert(), {"one": {"two":"three"}, "three": "four", "five": {"six": {"seven": "eight", "nine": "ten"}}})
+
+        it "Overrides previous keys":
+            converter = KeyValuePairsConverter([("one.two", "three"), ("one.two.five", "four")])
+            self.assertEqual(converter.convert(), {"one": {"two": {"five": "four"}}})
+
+            # And the other way round
+            converter = KeyValuePairsConverter([("one.two.five", "four"), ("one.two", "three")])
+            self.assertEqual(converter.convert(), {"one": {"two": "three"}})
+
+    describe "AttributesConverter":
+        it "converts all attributes to a dictionary":
+            class Obj(object):
+                def a(self): pass
+                one = "two"
+
+            class Obj2(Obj):
+                def b(self): pass
+                three = "four"
+                _ignored = "because_private"
+
+            obj = Obj2()
+            converter = AttributesConverter(obj)
+            self.assertEqual(converter.convert(), {"one": "two", "three": "four", "b": obj.b, "a": obj.a})
+
+        it "includes underscored attributes if asked for":
+            class Obj(object):
+                def a(self): pass
+                one = "two"
+
+            class Obj2(Obj):
+                def b(self): pass
+                three = "four"
+                _notignored = "because_private"
+
+            obj = Obj2()
+            converter = AttributesConverter(obj, include_underlined=True)
+            underlined = [attr for attr in dir(obj) if attr.startswith("_")]
+
+            expected = dict((attr, getattr(obj, attr)) for attr in underlined)
+            expected.update({"one": "two", "three": "four", "b": obj.b, "a": obj.a, "_notignored": "because_private"})
+            self.assertEqual(converter.convert(), expected)
+
+        it "only includes specified attributes if specified":
+            class Obj(object):
+                def a(self): pass
+                one = "two"
+                blah = "things"
+                hi = "hello"
+
+            converter = AttributesConverter(Obj(), ("one", "hi", "__class__"))
+            self.assertEqual(converter.convert(), {"one": "two", "hi": "hello", "__class__": Obj})
+
+        it "can lift the result if provided with a prefix to lift against":
+            class Obj(object):
+                def a(self): pass
+                one = "two"
+                blah = "things"
+                hi = "hello"
+
+            converter = AttributesConverter(Obj(), ("one", "hi", "__class__"), lift="cats.pandas")
+            self.assertEqual(converter.convert(), {"cats": {"pandas": {"one": "two", "hi": "hello", "__class__": Obj}}})
 

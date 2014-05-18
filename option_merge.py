@@ -22,10 +22,11 @@ class KeyValuePairsConverter(object):
 
 class AttributesConverter(object):
     """Converts an object with particular attributes to a dictionary"""
-    def __init__(self, obj, attributes=None, include_underlined=False, lift=None):
+    def __init__(self, obj, attributes=None, include_underlined=False, lift=None, ignoreable_values=None):
         self.obj = obj
         self.lift = lift
         self.attributes = attributes
+        self.ignoreable_values = ignoreable_values
         self.include_underlined = include_underlined
 
     def convert(self):
@@ -39,7 +40,9 @@ class AttributesConverter(object):
 
         for attr in attributes:
             if hasattr(self.obj, attr):
-                options[attr] = getattr(self.obj, attr)
+                val = getattr(self.obj, attr)
+                if not self.ignoreable_values or val not in self.ignoreable_values:
+                    options[attr] = val
 
         result = options.overrides
         if self.lift:

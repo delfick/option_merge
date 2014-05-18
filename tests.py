@@ -489,12 +489,22 @@ describe TestCase, "Converters":
         it "only includes specified attributes if specified":
             class Obj(object):
                 def a(self): pass
-                one = "two"
+                one = None
                 blah = "things"
                 hi = "hello"
 
             converter = AttributesConverter(Obj(), ("one", "hi", "__class__"))
-            self.assertEqual(converter.convert(), {"one": "two", "hi": "hello", "__class__": Obj})
+            self.assertEqual(converter.convert(), {"one": None, "hi": "hello", "__class__": Obj})
+
+        it "can exclude attributes that have particular values":
+            class Obj(object):
+                def a(self): pass
+                one = None
+                blah = "things"
+                hi = "hello"
+
+            converter = AttributesConverter(Obj(), ("one", "hi", "__class__"), ignoreable_values=(None, ))
+            self.assertEqual(converter.convert(), {"hi": "hello", "__class__": Obj})
 
         it "can lift the result if provided with a prefix to lift against":
             class Obj(object):

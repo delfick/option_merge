@@ -306,7 +306,7 @@ describe TestCase, "MergedOptions":
         describe "Getting all keys from a dictionary":
             it "returns leaf keys":
                 opts = {'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}}
-                self.assertEqual(sorted(self.merged.all_keys_from(opts)), sorted(["a.b.c", "a.d", "t"]))
+                self.assertEqual(self.merged.all_keys_from(opts), set(["a.b.c", "a.d", "t"]))
 
         describe "Getting keys on a mergedOptions":
             it "returns one level of keys":
@@ -335,7 +335,7 @@ describe TestCase, "MergedOptions":
                 self.merged.update({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
                 self.merged.update({'a': {'g':6}, 'e':7})
                 self.merged['a'] = {"d":34, "r":9001}
-                self.assertEqual(sorted(self.merged.all_keys()), sorted(["a.b.c", "a.d", "t", "a.g", "e", "a.r"]))
+                self.assertEqual(self.merged.all_keys(), set(["a.b.c", "a.d", "t", "a.g", "e", "a.r"]))
 
     describe "Iteration":
         it "just goes through the keys":
@@ -379,13 +379,13 @@ describe TestCase, "MergedOptions":
             self.merged.update({'a':{'c':4}, 'b':4})
             self.merged['a'] = {'c':5, "d":8}
 
-            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b", 4), ("a.c", 5), ("a.d", 8)]))
+            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b", 4), ("b.c", 9), ("a.c", 5), ("a.d", 8)]))
 
             del self.merged['b']
             self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.c", 5), ("a.d", 8)]))
 
             del self.merged['a.c']
-            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.c", 4), ("a.d", 8)]))
+            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.d", 8)]))
 
             self.assertEqual(sorted(self.merged.prefixed(["b"]).as_flat()), sorted([("c", 9)]))
 

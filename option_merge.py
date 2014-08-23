@@ -294,15 +294,18 @@ class MergedOptions(Mapping):
 
     def all_keys_from(self, opts, prefix=None):
         """Get us all deeply nested keys"""
+        result = []
         if prefix is None:
             prefix = []
 
         if isinstance(opts, dict) or isinstance(opts, MergedOptions):
             for key in opts:
                 for full_key in self.all_keys_from(opts[key], prefix + [key]):
-                    yield full_key
+                    result.append(full_key)
         else:
-            yield '.'.join(prefix)
+            result.append('.'.join(prefix))
+
+        return set(result)
 
     def keys(self):
         """Return a de-duplicated list of the keys we know about"""
@@ -318,13 +321,14 @@ class MergedOptions(Mapping):
             prefix_key = "{0}.".format('.'.join(self.prefix or ""))
         else:
             prefix_key = ""
-        lst = list(key[len(prefix_key):] for key in set(chain.from_iterable(opts_keys + all_overrides)) if key.startswith(prefix_key))
+
+        lst = list(key[len(prefix_key):] for key in list(chain.from_iterable(opts_keys + all_overrides)) if key.startswith(prefix_key))
         result = []
         for key in lst:
             key_with_dot = "{0}.".format(key)
             result = [thing for thing in result if not thing.startswith(key_with_dot)]
             result.append(key)
-        return result
+        return set(result)
 
     def __iter__(self):
         """Iterate over the keys"""
@@ -347,9 +351,11 @@ class MergedOptions(Mapping):
                     result[part] = {}
                 result = result[part]
 
-            result[last] = self[key]
-            if isinstance(result[last], MergedOptions):
-                result[last] = dict(result[last].items())
+            if isinstance(result, dict) or isinstance(result, MergedOptions):
+                result[last] = self[key]
+
+                if isinstance(result[last], MergedOptions):
+                    result[last] = dict(result[last].items())
 
         return top.items()
 

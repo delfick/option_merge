@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
       name = "option_merge"
-    , version = "0.5"
+    , version = "0.6"
     , py_modules = ['option_merge']
 
     , install_requires =

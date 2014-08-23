@@ -1,3 +1,4 @@
+from delfick_error import DelfickError
 from collections import Mapping
 from itertools import chain
 from copy import deepcopy
@@ -5,7 +6,7 @@ from copy import deepcopy
 class NotFound: pass
 """Used to signify no value was found"""
 
-class BadPrefix(Exception): pass
+class BadPrefix(DelfickError): pass
 """Used to say a prefix value is not a dictionary"""
 
 class KeyValuePairsConverter(object):
@@ -267,7 +268,7 @@ class MergedOptions(Mapping):
                         return {}
                 else:
                     if key in result:
-                        raise BadPrefix("{0} (value type {1}) is not a dictionary".format('.'.join(full_key), type(result[key])))
+                        raise BadPrefix("Value is not a dictionary", key='.'.join(full_key), found=type(result[key]))
                     else:
                         raise KeyError('.'.join(full_key))
 

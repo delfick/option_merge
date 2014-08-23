@@ -5,6 +5,10 @@ setup(
     , version = "0.5"
     , py_modules = ['option_merge']
 
+    , install_requires =
+      [ 'delfick_error>=1.4'
+      ]
+
     , extras_require =
       { "tests":
         [ "noseOfYeti>=1.4.9"

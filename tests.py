@@ -6,8 +6,11 @@ from option_merge import (
     )
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
-from unittest import TestCase
+from delfick_error import DelfickErrorTestMixin
+import unittest
 import mock
+
+class TestCase(unittest.TestCase, DelfickErrorTestMixin): pass
 
 describe TestCase, "MergedOptions":
     before_each:
@@ -261,7 +264,7 @@ describe TestCase, "MergedOptions":
             it "complains if prefix is a value":
                 opts = {"blah": {"meh": 3}}
                 self.merged.prefix = ["blah"]
-                with self.assertRaisesRegexp(BadPrefix, "blah.meh \(value type <type 'int'>\) is not a dictionary"):
+                with self.fuzzyAssertRaisesError(BadPrefix, "Value is not a dictionary", key="blah.meh", found=int):
                     self.merged.after_prefix(opts, prefix="blah.meh")
 
             it "returns empty dictionary instead of complaining if told to be silent":
@@ -286,7 +289,7 @@ describe TestCase, "MergedOptions":
             it "raises KeyError if can't prefix doesn't exist or isn't a dictionary":
                 with self.assertRaisesRegexp(KeyError, "'blah'"):
                     self.assertIs(self.merged.at_path("blah.meh", {}), NotFound)
-                with self.assertRaisesRegexp(BadPrefix, "blah \(value type <type 'int'>\) is not a dictionary"):
+                with self.fuzzyAssertRaisesError(BadPrefix, "Value is not a dictionary", key="blah", found=int):
                     self.assertIs(self.merged.at_path("blah.meh", {"blah": 3}), NotFound)
 
             it "returns NotFound if found prefix but not the path":

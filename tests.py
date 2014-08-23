@@ -79,7 +79,7 @@ describe TestCase, "MergedOptions":
 
     describe "Getting an item":
         it "raises a KeyError if the key doesn't exist":
-            with self.assertRaisesRegexp(KeyError, 'blah'):
+            with self.fuzzyAssertRaisesError(KeyError, 'blah'):
                 self.merged['blah']
 
         it "gets the first value for that key if it exists":
@@ -136,15 +136,15 @@ describe TestCase, "MergedOptions":
             self.assertEqual(self.merged['a'], 3)
 
             del self.merged['a']
-            with self.assertRaisesRegexp(KeyError, "'a'"):
+            with self.fuzzyAssertRaisesError(KeyError, "a"):
                 self.merged['a']
-            with self.assertRaisesRegexp(KeyError, "'a'"):
+            with self.fuzzyAssertRaisesError(KeyError, "a"):
                 del self.merged['a']
 
             self.merged.update({'b':1})
             self.assertEqual(self.merged['b'], 1)
             del self.merged['b']
-            with self.assertRaisesRegexp(KeyError, "'b'"):
+            with self.fuzzyAssertRaisesError(KeyError, "b"):
                 del self.merged['b']
 
         it "can delete from a nested dict":
@@ -287,7 +287,7 @@ describe TestCase, "MergedOptions":
                 self.assertIs(self.merged.at_path("", opts), opts)
 
             it "raises KeyError if can't prefix doesn't exist or isn't a dictionary":
-                with self.assertRaisesRegexp(KeyError, "'blah'"):
+                with self.fuzzyAssertRaisesError(KeyError, "blah"):
                     self.assertIs(self.merged.at_path("blah.meh", {}), NotFound)
                 with self.fuzzyAssertRaisesError(BadPrefix, "Value is not a dictionary", key="blah", found=int):
                     self.assertIs(self.merged.at_path("blah.meh", {"blah": 3}), NotFound)
@@ -363,7 +363,6 @@ describe TestCase, "MergedOptions":
             self.merged.update({'a':1, 'b':{'c':9}})
             self.merged.update({'a':{'c':4}, 'b':4})
             self.merged['a'] = {'c':5, "d":8}
-            print self.merged.items()
             self.assertEqual(self.merged.items(), {"b":4, "a":{"c":5, "d":8}}.items())
 
             del self.merged['b']

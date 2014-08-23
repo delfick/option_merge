@@ -6,7 +6,8 @@ setup(
     , py_modules = ['option_merge']
 
     , install_requires =
-      [ 'delfick_error>=1.4'
+      [ 'six'
+      , 'delfick_error>=1.4'
       ]
 
     , extras_require =

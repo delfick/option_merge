@@ -2,6 +2,7 @@ from delfick_error import DelfickError
 from collections import Mapping
 from itertools import chain
 from copy import deepcopy
+import six
 
 class NotFound: pass
 """Used to signify no value was found"""
@@ -250,7 +251,7 @@ class MergedOptions(Mapping):
         if prefix is None:
             return opts
 
-        if isinstance(prefix, basestring):
+        if isinstance(prefix, six.string_types):
             prefix = prefix.split(".")
 
         result = opts

@@ -7,7 +7,7 @@ setup(
 
     , install_requires =
       [ 'six'
-      , 'delfick_error>=1.4'
+      , 'delfick_error>=1.6'
       ]
 
     , extras_require =

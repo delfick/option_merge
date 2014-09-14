@@ -30,7 +30,7 @@ describe TestCase, "MergedOptions":
         self.assertEqual(merged.options, [])
         self.assertEqual(merged.overrides, {})
 
-    @mock.patch("option_merge.deepcopy")
+    @mock.patch("option_merge.merge.deepcopy")
     it "has classmethod for adding options", fake_deepcopy:
         options1 = mock.Mock(name="options1")
         options2 = mock.Mock(name="options2")
@@ -48,7 +48,7 @@ describe TestCase, "MergedOptions":
 
     describe "Adding more options":
 
-        @mock.patch("option_merge.deepcopy")
+        @mock.patch("option_merge.merge.deepcopy")
         it "has method for adding more options", fake_deepcopy:
             options1 = mock.Mock(name="options1")
             options2 = mock.Mock(name="options2")

@@ -5,6 +5,7 @@ from option_merge import (
     , ConverterProperty, KeyValuePairsConverter, AttributesConverter
     )
 from option_merge.helper import NotFound
+from option_merge.storage import Storage
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_error import DelfickErrorTestMixin
@@ -17,58 +18,44 @@ describe TestCase, "MergedOptions":
     before_each:
         self.merged = MergedOptions()
 
-    it "has prefix, options and overrides":
-        prefix = mock.Mock(name="prefix")
-        options = mock.Mock(name="options")
-        overrides = mock.Mock(name="overrides")
-        merged = MergedOptions(prefix=prefix, options=options, overrides=overrides)
-        self.assertIs(merged.prefix, prefix)
-        self.assertIs(merged.options, options)
-        self.assertIs(merged.overrides, overrides)
+    it "has prefix and storage":
+        storage = mock.Mock(name="storage")
+        dot_joiner = mock.Mock(name="dot_joiner")
+        prefix_list = mock.Mock(name="prefix_list")
+        prefix_string = mock.Mock(name="prefix_string")
+
+        dot_joiner.return_value = prefix_string
+        with mock.patch("option_merge.merge.dot_joiner", dot_joiner):
+            merged = MergedOptions(prefix=prefix_list, storage=storage)
+
+        self.assertIs(merged.storage, storage)
+        self.assertIs(merged.prefix_list, prefix_list)
+        self.assertIs(merged.prefix_string, prefix_string)
 
         merged = MergedOptions()
-        self.assertIs(merged.prefix, None)
-        self.assertEqual(merged.options, [])
-        self.assertEqual(merged.overrides, {})
+        self.assertEqual(merged.prefix_list, [])
+        self.assertEqual(merged.prefix_string, "")
+        self.assertEqual(type(merged.storage), Storage)
 
-    @mock.patch("option_merge.merge.deepcopy")
-    it "has classmethod for adding options", fake_deepcopy:
+    it "has classmethod for adding options":
         options1 = mock.Mock(name="options1")
         options2 = mock.Mock(name="options2")
-        copy1 = mock.Mock(name="copy1")
-        copy2 = mock.Mock(name="copy2")
 
-        def mapper(opts):
-            if opts is options1: return copy1
-            if opts is options2: return copy2
-        fake_deepcopy.side_effect = mapper
-
-        merged = MergedOptions.using(options1, options2)
-        self.assertEqual(merged.options, [copy2, copy1])
-        fake_deepcopy.assert_has_calls([mock.call(options1), mock.call(options2)])
+        merged = MergedOptions.using(options1, options2, source="somewhere")
+        self.assertEqual(merged.storage.data, [([], options2, "somewhere"), ([], options1, "somewhere")])
 
     describe "Adding more options":
 
-        @mock.patch("option_merge.merge.deepcopy")
-        it "has method for adding more options", fake_deepcopy:
+        it "has method for adding more options":
             options1 = mock.Mock(name="options1")
             options2 = mock.Mock(name="options2")
-            copy1 = mock.Mock(name="copy1")
-            copy2 = mock.Mock(name="copy2")
-
-            def mapper(opts):
-                if opts is options1: return copy1
-                if opts is options2: return copy2
-            fake_deepcopy.side_effect = mapper
 
             merged = MergedOptions()
             merged.update(options1)
-            self.assertEqual(merged.options, [copy1])
-            fake_deepcopy.assert_has_calls(mock.call(options1))
+            self.assertEqual(merged.storage.data, [([], options1, None)])
 
             merged.update(options2)
-            self.assertEqual(merged.options, [copy2, copy1])
-            fake_deepcopy.assert_has_calls(mock.call(options2))
+            self.assertEqual(merged.storage.data, [([], options2, None), ([], options1, None)])
 
         it "Works when there is a prefix":
             options = MergedOptions.using({"a": {"b": 1, "c": 2}})
@@ -93,31 +80,18 @@ describe TestCase, "MergedOptions":
             fake_values_for.assert_called_once_with('blah')
 
     describe "Setting an item":
-        it "puts it in the overrides dictionary":
-            self.assertEqual(self.merged.overrides, {})
-            self.merged['blah'] = {}
-            self.assertEqual(self.merged.overrides, {'blah':{}})
+        it "adds to data":
+            self.merged["a"] = 1
+            self.merged["a"] = {"a": "b"}
 
-            self.merged["tree"] = 4
-            self.assertEqual(self.merged.overrides, {'blah':{}, "tree": 4})
+            self.assertEqual(list(self.merged["a"].items()), [("a", "b")])
 
-            self.merged["blah"]["meh"] = "things"
-            self.assertEqual(self.merged.overrides, {'blah': {'meh': "things"}, "tree": 4})
+            self.merged["a"] = 4
+            self.assertEqual(self.merged["a"], 4)
 
-            self.merged["blah"] = {"meh": {'r':20}}
-            self.merged["blah"]["meh"]["gh"] = 3
-            self.assertEqual(self.merged.overrides, {"blah": {"meh": {"gh": 3, 'r':20}}, "tree": 4})
-
-        it "creates missing dictionaries if a prefix doesn't exist":
-            self.assertEqual(self.merged.overrides, {})
-            self.merged["blah.meh.gh"] = 3
-            self.assertEqual(self.merged.overrides, {"blah": {"meh": {"gh": 3}}})
-
-            self.merged["blah.meh.tree"] = 4
-            self.assertEqual(self.merged.overrides, {"blah": {"meh": {"gh": 3, "tree": 4}}})
-
-            self.merged["blah.hmm.tree"] = 5
-            self.assertEqual(self.merged.overrides, {"blah": {"meh": {"gh": 3, "tree": 4}, "hmm": {"tree": 5}}})
+            del self.merged["a"]
+            del self.merged["a"]
+            self.assertEqual(self.merged["a"], 1)
 
     describe "Deleting an item":
         it "only deletes once":
@@ -162,7 +136,7 @@ describe TestCase, "MergedOptions":
 
             del self.merged['b']['c']
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}])
+            self.assertEqual(values, [{'d':8}, {}])
 
         it "can delete dot seperated values":
             self.merged.update({'a':1, 'b':{'c':5}})
@@ -178,7 +152,7 @@ describe TestCase, "MergedOptions":
 
             del self.merged['b.c']
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}])
+            self.assertEqual(values, [{'d':8}, {}])
 
     describe "Getting all values for a key":
         it "finds all the values":
@@ -190,125 +164,9 @@ describe TestCase, "MergedOptions":
 
             self.merged['a'] = 400
             values = list(self.merged.values_for('a'))
-            self.assertEqual(values, [400, {'c':4}, 1])
-
-    describe "Clean prefix":
-        it "deletes a prefix if it is an empty dictionary":
-            options = {"blah": {"meh": {}}}
-            self.merged.prefix = ["blah", "meh"]
-            self.merged.clean_prefix(options)
-            self.assertEqual(options, {"blah": {}})
-
-        it "does nothing if prefix is not an empty dictionary":
-            options = {}
-            self.merged.prefix = ["blah", "meh"]
-
-            self.merged.clean_prefix(options)
-            self.assertEqual(options, {})
-
-            options["blah"] = {}
-            self.merged.clean_prefix(options)
-            self.assertEqual(options, {"blah": {}})
-
-            options["blah"] = {"meh": {1:2}}
-            self.merged.clean_prefix(options)
-            self.assertEqual(options, {"blah": {"meh": {1:2}}})
-
-    describe "Prefixes":
-        describe "Joining key with the prefix":
-            it "returns dot prefixed string with just the key if no prefix":
-                self.assertEqual(self.merged.prefix_key('blah'), 'blah')
-
-            it "returns dot prefixed string with key after existing prefix":
-                self.merged.prefix = ['one', 'two']
-                self.assertEqual(self.merged.prefix_key('blah'), 'one.two.blah')
-
-            it "returns without leading dot if no path":
-                self.merged.prefix = ['one']
-                self.assertEqual(self.merged.prefix_key(''), 'one')
-
-                self.merged.prefix = ['one', 'two']
-                self.assertEqual(self.merged.prefix_key(''), 'one.two')
-
-        describe "Making new MergedOptions":
-            it "uses same options and overrides":
-                prefix = mock.Mock(name="prefix")
-                options = mock.Mock(name="options")
-                overrides = mock.Mock(name="overrides")
-                self.merged.options = options
-                self.merged.overrides = overrides
-                prefixed = self.merged.prefixed(prefix)
-                self.assertIs(prefixed.prefix, prefix)
-                self.assertIs(prefixed.options, options)
-                self.assertIs(prefixed.overrides, overrides)
-
-        describe "Getting value at some prefix":
-            it "returns options as is if no prefix":
-                opts = mock.Mock(name="opts")
-                self.assertIs(self.merged.after_prefix(opts), opts)
-
-                self.assertIs(self.merged.after_prefix(opts, prefix=None), opts)
-
-                self.merged.prefix = ["blah"]
-                self.assertIs(self.merged.after_prefix(opts, prefix=None), opts)
-
-            it "uses prefix on merged if none specified":
-                opts = {"blah": {"meh": 3}}
-                self.merged.prefix = ["blah"]
-                self.assertEqual(self.merged.after_prefix(opts), {"meh": 3})
-
-            it "uses specified prefix if specified":
-                opts = {"blah": {"meh": {4:5}}}
-                self.merged.prefix = ["blah"]
-                self.assertEqual(self.merged.after_prefix(opts, prefix="blah.meh"), {4:5})
-
-            it "complains if prefix is a value":
-                opts = {"blah": {"meh": 3}}
-                self.merged.prefix = ["blah"]
-                with self.fuzzyAssertRaisesError(BadPrefix, "Value is not a dictionary", key="blah.meh", found=int):
-                    self.merged.after_prefix(opts, prefix="blah.meh")
-
-            it "returns empty dictionary instead of complaining if told to be silent":
-                opts = {}
-                self.merged.prefix = ["blah"]
-                self.assertEqual(self.merged.after_prefix(opts, prefix="blah.meh", silent=True), {})
-                self.assertEqual(opts, {})
-
-            it "creates empty dictionaries if silent and create":
-                opts = {}
-                self.merged.prefix = ["blah"]
-                self.assertEqual(self.merged.after_prefix(opts, prefix="blah.meh", silent=True, create=True), {})
-                self.assertEqual(opts, {"blah": {"meh": {}}})
-
-        describe "Getting value or NotFound from some dot seperated string":
-            it "returns options as is if no path":
-                opts = mock.Mock(name="opts")
-                self.assertIs(self.merged.at_path(None, opts), opts)
-                self.assertIs(self.merged.at_path([], opts), opts)
-                self.assertIs(self.merged.at_path("", opts), opts)
-
-            it "raises KeyError if can't prefix doesn't exist or isn't a dictionary":
-                with self.fuzzyAssertRaisesError(KeyError, "blah"):
-                    self.assertIs(self.merged.at_path("blah.meh", {}), NotFound)
-                with self.fuzzyAssertRaisesError(BadPrefix, "Value is not a dictionary", key="blah", found=int):
-                    self.assertIs(self.merged.at_path("blah.meh", {"blah": 3}), NotFound)
-
-            it "returns NotFound if found prefix but not the path":
-                self.assertIs(self.merged.at_path("blah", {}), NotFound)
-                self.assertIs(self.merged.at_path("blah.meh", {"blah": {}}), NotFound)
-
-            it "returns the value at the path if it exists":
-                opts = {'a': {'b': {'c':1}, 'd':5}, 't': 6}
-                self.assertEqual(self.merged.at_path('a.b', opts), {'c':1})
-                self.assertEqual(self.merged.at_path('t', opts), 6)
-                self.assertEqual(self.merged.at_path('a.d', opts), 5)
+            self.assertEqual(values, [400, {'c': 5}, {'c':4}, 1])
 
     describe "Getting keys":
-        describe "Getting all keys from a dictionary":
-            it "returns leaf keys":
-                opts = {'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}}
-                self.assertEqual(self.merged.all_keys_from(opts), set(["a.b.c", "a.d", "t"]))
-
         describe "Getting keys on a mergedOptions":
             it "returns one level of keys":
                 self.merged.update({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
@@ -326,17 +184,17 @@ describe TestCase, "MergedOptions":
                 self.assertEqual(sorted(prefixed.keys()), sorted(["b", "d"]))
 
                 self.merged.update({'a': {'g':6}, 'e':7})
-                self.assertEqual(sorted(prefixed.keys()), sorted(["b", "d", "g"]))
+                self.assertEqual(sorted(prefixed.keys()), sorted(["g", "b", "d"]))
 
                 self.merged['a'] = {"h": 9}
-                self.assertEqual(sorted(prefixed.keys()), sorted(["b", "d", "g", "h"]))
+                self.assertEqual(sorted(prefixed.keys()), sorted(["h", "g", "b", "d"]))
 
-        describe "Getting all keys":
-            it "Gets full keys from everywhere":
-                self.merged.update({'a': {'b': {'c':1}, 'd':5}, 't': 6, 'u': {}})
-                self.merged.update({'a': {'g':6}, 'e':7})
-                self.merged['a'] = {"d":34, "r":9001}
-                self.assertEqual(self.merged.all_keys(), set(["a.b.c", "a.d", "t", "a.g", "e", "a.r"]))
+            it "returns keys one level from multi dictionary MergedOptions":
+                self.merged.update({'a':1, 'b':{'c':9}})
+                self.merged.update({'a':{'c':4}, 'b':4})
+                self.merged['a'] = {'c':5, "d":8}
+                self.merged['a']["c"] = {'c':5, "d":8}
+                self.assertEqual(sorted(self.merged.keys()), sorted(["a", "b"]))
 
     describe "Iteration":
         it "just goes through the keys":
@@ -364,41 +222,27 @@ describe TestCase, "MergedOptions":
             self.merged.update({'a':1, 'b':{'c':9}})
             self.merged.update({'a':{'c':4}, 'b':4})
             self.merged['a'] = {'c':5, "d":8}
-            self.assertEqual(self.merged.items(), {"b":4, "a":{"c":5, "d":8}}.items())
+            self.assertEqual(sorted(self.merged.items()), sorted({"b":4, "a":self.merged.prefixed("a")}.items()))
 
             del self.merged['b']
-            self.assertEqual(self.merged.items(), {"b":{'c':9}, "a":{"c":5, "d":8}}.items())
+            self.assertEqual(sorted(self.merged.items()), sorted({"b":self.merged.prefixed("b"), "a":self.merged.prefixed("a")}.items()))
+            self.assertEqual(sorted((k, dict(v.items())) for k, v in self.merged.items()), sorted({"b":{'c': 9}, "a":{'c':5, 'd':8}}.items()))
 
             del self.merged['a.c']
-            self.assertEqual(self.merged.items(), {"b":{'c':9}, "a":{"c":4, "d":8}}.items())
-
-            self.assertEqual(self.merged.prefixed(["b"]).items(), {'c': 9}.items())
-
-    describe "Getting as a flat dotted key, value list":
-        it "combines everything into one flat list of key value tuples":
-            self.merged.update({'a':1, 'b':{'c':9}})
-            self.merged.update({'a':{'c':4}, 'b':4})
-            self.merged['a'] = {'c':5, "d":8}
-
-            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b", 4), ("b.c", 9), ("a.c", 5), ("a.d", 8)]))
-
-            del self.merged['b']
-            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.c", 5), ("a.d", 8)]))
-
-            del self.merged['a.c']
-            self.assertEqual(sorted(self.merged.as_flat()), sorted([("b.c", 9), ("a.d", 8)]))
-
-            self.assertEqual(sorted(self.merged.prefixed(["b"]).as_flat()), sorted([("c", 9)]))
+            self.assertEqual(sorted(self.merged.items()), sorted({"b":self.merged.prefixed("b"), "a":self.merged.prefixed("a")}.items()))
+            self.assertEqual(sorted((k, dict(v.items())) for k, v in self.merged.items()), sorted({"b":{'c': 9}, "a":{'c': 4, 'd':8}}.items()))
 
 describe TestCase, "Converters":
     it "has a KeyValuePairs converter on MergedOptions":
-        result = MergedOptions.KeyValuePairs([("one", "two"), ("three.four", "five")])
-        self.assertEqual(result, {"one": "two", "three": {"four": "five"}})
+        result = MergedOptions.KeyValuePairs([(["one"], "two"), (["three", "four"], "five")])
+        self.assertEqual(dict(result.items()), {"one": "two", "three": result.prefixed("three")})
+        self.assertEqual(dict(result["three"].items()), {"four": "five"})
 
     it "has a Attributes converter on MergedOptions":
         obj = type("obj", (object, ), {"one": "two", "two": "three", "four": "five"})
         result = MergedOptions.Attributes(obj, ("one", "four"), lift="global")
-        self.assertEqual(result, {"global": {"one": "two", "four": "five"}})
+        self.assertEqual(dict(result.items()), {"global": result.prefixed("global")})
+        self.assertEqual(dict(result["global"].items()), {"one": "two", "four": "five"})
 
     describe "Property Converter":
         it "takes a converter":
@@ -441,20 +285,27 @@ describe TestCase, "Converters":
 
     describe "KeyValuePairsConverter":
         it "converts simple key value pairs into a dictionary":
-            converter = KeyValuePairsConverter([("one", "two"), (3, 4)])
-            self.assertEqual(converter.convert(), {"one": "two", "3": 4})
+            converter = KeyValuePairsConverter([(["one"], "two"), (["3"], 4)])
+            self.assertEqual(dict(converter.convert().items()), {"one": "two", "3": 4})
 
         it "converts complex key value pairs into a dictionary":
-            converter = KeyValuePairsConverter([("one.two", "three"), ("three", "four"), ("five.six.seven", "eight"), ("five.six.nine", "ten")])
-            self.assertEqual(converter.convert(), {"one": {"two":"three"}, "three": "four", "five": {"six": {"seven": "eight", "nine": "ten"}}})
+            converted = KeyValuePairsConverter([(["one", "two"], "three"), (["three"], "four"), (["five", "six", "seven"], "eight"), (["five", "six", "nine"], "ten")]).convert()
+            self.assertEqual(dict(converted.items()), {"one": converted.prefixed("one"), "three": "four", "five": converted.prefixed("five")})
+            self.assertEqual(dict(converted["five"].items()), {"six": converted["five"].prefixed("six")})
+            six = converted["five"]["six"]
+            self.assertEqual(dict(converted["five"]["six"].items()), {"seven": "eight", "nine": "ten"})
+            self.assertEqual(dict(converted["one"].items()), {"two": "three"})
 
         it "Overrides previous keys":
-            converter = KeyValuePairsConverter([("one.two", "three"), ("one.two.five", "four")])
-            self.assertEqual(converter.convert(), {"one": {"two": {"five": "four"}}})
+            converted = KeyValuePairsConverter([(["one", "two"], "three"), (["one", "two", "five"], "four")]).convert()
+            self.assertEqual(dict(converted.items()), {"one": converted.prefixed("one")})
+            self.assertEqual(dict(converted["one"].items()), {"two": converted["one"].prefixed("two")})
+            self.assertEqual(dict(converted["one"]["two"].items()), {"five": "four"})
 
             # And the other way round
-            converter = KeyValuePairsConverter([("one.two.five", "four"), ("one.two", "three")])
-            self.assertEqual(converter.convert(), {"one": {"two": "three"}})
+            converted = KeyValuePairsConverter([(["one", "two", "five"], "four"), (["one", "two"], "three")]).convert()
+            self.assertEqual(dict(converted.items()), {"one": converted.prefixed("one")})
+            self.assertEqual(dict(converted["one"].items()), {"two": "three"})
 
     describe "AttributesConverter":
         it "converts all attributes to a dictionary":
@@ -468,8 +319,8 @@ describe TestCase, "Converters":
                 _ignored = "because_private"
 
             obj = Obj2()
-            converter = AttributesConverter(obj)
-            self.assertEqual(converter.convert(), {"one": "two", "three": "four", "b": obj.b, "a": obj.a})
+            converted = AttributesConverter(obj).convert()
+            self.assertEqual(dict(converted.items()), {"one": "two", "three": "four", "b": obj.b, "a": obj.a})
 
         it "includes underscored attributes if asked for":
             class Obj(object):
@@ -482,12 +333,13 @@ describe TestCase, "Converters":
                 _notignored = "because_private"
 
             obj = Obj2()
-            converter = AttributesConverter(obj, include_underlined=True)
+            converted = AttributesConverter(obj, include_underlined=True).convert()
             underlined = [attr for attr in dir(obj) if attr.startswith("_")]
 
             expected = dict((attr, getattr(obj, attr)) for attr in underlined)
             expected.update({"one": "two", "three": "four", "b": obj.b, "a": obj.a, "_notignored": "because_private"})
-            self.assertEqual(converter.convert(), expected)
+            expected["__dict__"] = converted.prefixed("__dict__")
+            self.assertEqual(dict(converted.items()), expected)
 
         it "only includes specified attributes if specified":
             class Obj(object):
@@ -497,7 +349,7 @@ describe TestCase, "Converters":
                 hi = "hello"
 
             converter = AttributesConverter(Obj(), ("one", "hi", "__class__"))
-            self.assertEqual(converter.convert(), {"one": None, "hi": "hello", "__class__": Obj})
+            self.assertEqual(dict(converter.convert().items()), {"one": None, "hi": "hello", "__class__": Obj})
 
         it "can exclude attributes that have particular values":
             class Obj(object):
@@ -507,7 +359,7 @@ describe TestCase, "Converters":
                 hi = "hello"
 
             converter = AttributesConverter(Obj(), ("one", "hi", "__class__"), ignoreable_values=(None, ))
-            self.assertEqual(converter.convert(), {"hi": "hello", "__class__": Obj})
+            self.assertEqual(dict(converter.convert().items()), {"hi": "hello", "__class__": Obj})
 
         it "can lift the result if provided with a prefix to lift against":
             class Obj(object):
@@ -516,6 +368,8 @@ describe TestCase, "Converters":
                 blah = "things"
                 hi = "hello"
 
-            converter = AttributesConverter(Obj(), ("one", "hi", "__class__"), lift="cats.pandas")
-            self.assertEqual(converter.convert(), {"cats": {"pandas": {"one": "two", "hi": "hello", "__class__": Obj}}})
+            converted = AttributesConverter(Obj(), ("one", "hi", "__class__"), lift=["cats", "pandas"]).convert()
+            self.assertEqual(dict(converted.items()), {"cats": converted.prefixed("cats")})
+            self.assertEqual(dict(converted["cats"].items()), {"pandas": converted["cats"].prefixed("pandas")})
+            self.assertEqual(dict(converted["cats"]["pandas"].items()), {"one": "two", "hi": "hello", "__class__": Obj})
 

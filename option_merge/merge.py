@@ -1,7 +1,8 @@
+from option_merge.helper import prefixed_path_list, prefixed_path_string, without_prefix, dot_joiner, make_dict
+from option_merge.storage import Storage
+
 from delfick_error import DelfickError
 from collections import Mapping
-from itertools import chain
-from copy import deepcopy
 import six
 
 class BadPrefix(DelfickError): pass
@@ -9,24 +10,26 @@ class BadPrefix(DelfickError): pass
 
 class KeyValuePairsConverter(object):
     """Converts a list of key,value pairs to a dictionary"""
-    def __init__(self, pairs):
+    def __init__(self, pairs, source=None):
         self.pairs = pairs
+        self.source = source
 
     def convert(self):
-        """Return us a dictionary from our pairs"""
-        options = MergedOptions()
-        for key, value in self.pairs:
-            options[str(key)] = value
-        return options.overrides
+        """Return us a MergedOptions from our pairs"""
+        return MergedOptions().using(*[make_dict(key[0], key[1:], value) for key, value in self.pairs], source=self.source)
 
 class AttributesConverter(object):
     """Converts an object with particular attributes to a dictionary"""
-    def __init__(self, obj, attributes=None, include_underlined=False, lift=None, ignoreable_values=None):
+    def __init__(self, obj, attributes=None, include_underlined=False, lift=None, ignoreable_values=None, source=None):
         self.obj = obj
         self.lift = lift
+        self.source = source
         self.attributes = attributes
         self.ignoreable_values = ignoreable_values
         self.include_underlined = include_underlined
+
+        if isinstance(self.lift, six.string_types):
+            self.lift = [self.lift]
 
     def convert(self):
         """Return us a MergedOptions from our attributes"""
@@ -43,12 +46,12 @@ class AttributesConverter(object):
                 if not self.ignoreable_values or val not in self.ignoreable_values:
                     options[attr] = val
 
-        result = options.overrides
         if self.lift:
             lifted = MergedOptions()
-            lifted[self.lift] = result
-            result = lifted.overrides
-        return result
+            lifted.storage.add(self.lift, options)
+            return lifted
+        else:
+            return options
 
 class ConverterProperty(object):
     """Creates a Property for accessing a converter"""
@@ -58,27 +61,22 @@ class ConverterProperty(object):
     def __get__(self, obj=None, owner=None):
         return lambda *args, **kwargs: self.converter(*args, **kwargs).convert()
 
-class MergedOptions(Mapping):
+class MergedOptions(dict, Mapping):
     """
     Wrapper around multiple dictionaries to behave as one.
 
     Usage::
 
-        options = MergedOptions.using(options1, options2)
+        options = MergedOptions.using(options1, options2, source="SomePlace")
 
     Is equivalent to::
 
         options = MergedOptions()
-        options.update(options1)
-        options.update(options2)
+        options.update(options1, source="SomePlace")
+        options.update(options2, source=SomePlace")
 
     The later an option is added, the more influence it has.
     i.e. when a key is accessed, later options are looked at first.
-
-    When options are added, copies are made.
-
-    When you set a key on the merged options, it adds it to a special overrides dictionary.
-    This overrides is looked at first when accessing a key.
 
     When you delete a key, it removes it from the first dictionary it can find.
     This means a key can change value when deleted rather than disappearing altogether
@@ -94,238 +92,58 @@ class MergedOptions(Mapping):
         merged['a']['b'] == 4
         merged['a']['c'] == 3
         merged['d'] == 7
-
-    You may also get all values for a key with merged.values_for(path)
-    Where path is a dot seperated path
-    so merged.values_for("a.b") == [4, 1]
-
-    You can also get all deeply nested keys with merged.all_keys()
-    so merged.all_keys() == ["d", "a.b", "b", "a.c"]
     """
 
     Attributes = ConverterProperty(AttributesConverter)
     KeyValuePairs = ConverterProperty(KeyValuePairsConverter)
 
-    def __init__(self, prefix=None, options=None, overrides=None):
-        self.prefix = prefix
-        self.options = options
-        self.overrides = overrides
+    def __init__(self, prefix=None, storage=None):
+        self.prefix_list = prefix
+        if not self.prefix_list:
+            self.prefix_list = []
+        if isinstance(self.prefix_list, six.string_types):
+            self.prefix_list = [self.prefix_list]
+        self.prefix_string = dot_joiner(self.prefix_list)
 
-        if self.options is None:
-            self.options = []
-
-        if self.overrides is None:
-            self.overrides = {}
+        self.storage = storage
+        if self.storage is None:
+            self.storage = Storage()
 
     @classmethod
-    def using(cls, *options):
+    def using(cls, *options, **kwargs):
         """Convenience for calling update multiple times"""
+        source = kwargs.get("source")
         merged = cls()
         for opts in options:
-            merged.update(opts)
+            merged.update(opts, source=source)
         return merged
 
-    def update(self, options):
+    def update(self, options, source=None):
         """Add new options"""
-        if options is None:
-            return
+        if options is None: return
+        self.storage.add(self.prefix_list, options, source=source)
 
-        if not self.prefix:
-            self.options.insert(0, deepcopy(options))
-        else:
-            for value in self.values_for(""):
-                if isinstance(value, dict):
-                    value.update(options)
-                else:
-                    value.options.insert(0, deepcopy(options))
-
-                break
-
-    def values_for(self, path):
+    def __getitem__(self, path):
         """
-        Get all known values for some path
-
-        First consult the overrides
-
-        Then look at each option dictionary that has been registered.
-        """
-        results = []
-
-        try:
-            results.append(self.at_path(self.prefix_key(path), self.overrides))
-        except (BadPrefix, KeyError):
-            pass
-
-        for opts in self.options:
-            try:
-                results.append(self.at_path(self.prefix_key(path), opts))
-            except (BadPrefix, KeyError):
-                pass
-
-        for found in results:
-            if found is not NotFound:
-                yield found
-
-    def __getitem__(self, key):
-        """
-        Access a key.
+        Access some path
 
         Return the first value it comes across
         Raise KeyError if nothing has the specified key
         """
-        for val in self.values_for(key):
-            if isinstance(val, dict) or isinstance(val, MergedOptions):
-                return self.prefixed(self.prefix_key(key).split('.'))
+        for val in self.values_for(path):
+            if isinstance(val, dict):
+                return self.prefixed(path)
             else:
                 return val
-        raise KeyError(self.prefix_key(key))
+        raise KeyError(path)
 
-    def __setitem__(self, key, value):
-        """Set a key in the overrides"""
-        split = self.prefix_key(key).split('.')
-        start, last = split[:-1], split[-1]
-        if not start:
-            pathed = self.overrides
-        else:
-            pathed = self.after_prefix(self.overrides, prefix=start, create=True, silent=True)
+    def __setitem__(self, path, value):
+        """Set a key in the storage"""
+        self.storage.add(self.prefixed_path_list([path]), value)
 
-        pathed[last] = value
-
-    def __delitem__(self, key):
-        """
-        Delete a key from the first option dictionary that has it.
-
-        Only deletes from the first occurrence, which means deleting a key
-        may just change it's value than get rid of it.
-
-        Raise a KeyError if the key doesn't exist
-        """
-        split = self.prefix_key(key).split('.')
-        start, last = split[:-1], split[-1]
-
-        prefixed_overrides = self.after_prefix(self.overrides, silent=True, prefix=start)
-        if last in prefixed_overrides:
-            del prefixed_overrides[last]
-            self.clean_prefix(self.overrides)
-            return
-
-        for opts in self.options:
-            prefixed_opts = self.after_prefix(opts, silent=True, prefix=start)
-            if last in prefixed_opts:
-                del prefixed_opts[last]
-                self.clean_prefix(opts, start)
-                return
-
-        raise KeyError(self.prefix_key(key))
-
-    def clean_prefix(self, opts, prefix=NotFound):
-        """If our prefix to opts is an empty dictionary, then remove it"""
-        if prefix is NotFound:
-            prefix = self.prefix
-
-        if prefix:
-            start, last = prefix[:-1], prefix[-1]
-            prefixed = self.after_prefix(opts, silent=True, prefix=start)
-            if last in prefixed and prefixed[last] == {}:
-                del prefixed[last]
-
-    def prefix_key(self, key):
-        """Return a key representing prefix on this class and extra key"""
-        prefix = self.prefix or []
-        if key:
-            prefix = list(prefix) + key.split('.')
-        return '.'.join(prefix)
-
-    def after_prefix(self, opts, prefix=NotFound, silent=False, create=False):
-        """
-        Return part in provided opts after our prefix
-        Only complain if the prefix doesn't exist if silent is False
-        Otherwise just return an empty dictionary
-        """
-        if prefix is NotFound:
-            prefix = self.prefix
-
-        if prefix is None:
-            return opts
-
-        if isinstance(prefix, six.string_types):
-            prefix = prefix.split(".")
-
-        result = opts
-        full_key = []
-        for key in prefix:
-            full_key.append(key)
-            if key in result and (isinstance(result[key], dict) or isinstance(result[key], MergedOptions)):
-                result = result[key]
-            else:
-                if silent:
-                    if create:
-                        result[key] = {}
-                        result = result[key]
-                    else:
-                        return {}
-                else:
-                    if key in result:
-                        raise BadPrefix("Value is not a dictionary", key='.'.join(full_key), found=type(result[key]))
-                    else:
-                        raise KeyError('.'.join(full_key))
-
-        return result
-
-    def at_path(self, path, opts):
-        """Return value in provided opts after provided dot seperated string path"""
-        if not path:
-            return opts
-
-        split = path.split('.')
-        start, last = split[:-1], split[-1]
-        prefixed = self.after_prefix(opts, prefix=start, silent=False)
-        if last in prefixed:
-            return prefixed[last]
-        else:
-            return NotFound
-
-    def prefixed(self, prefix):
-        """Return a MergedOptions object that is this object prefixed with our prefix and provided key"""
-        return MergedOptions(prefix=prefix, options=self.options, overrides=self.overrides)
-
-    def all_keys_from(self, opts, prefix=None):
-        """Get us all deeply nested keys"""
-        result = []
-        if prefix is None:
-            prefix = []
-
-        if isinstance(opts, dict) or isinstance(opts, MergedOptions):
-            for key in opts:
-                for full_key in self.all_keys_from(opts[key], prefix + [key]):
-                    result.append(full_key)
-        else:
-            result.append('.'.join(prefix))
-
-        return set(result)
-
-    def keys(self):
-        """Return a de-duplicated list of the keys we know about"""
-        prefixed_overrides = self.after_prefix(self.overrides, silent=True).keys()
-        prefixed_opts = [self.after_prefix(opts, silent=True).keys() for opts in self.options]
-        return list(set(chain.from_iterable(prefixed_opts + [prefixed_overrides])))
-
-    def all_keys(self):
-        """Return all keys in our options"""
-        all_overrides = [list(self.all_keys_from(self.overrides))]
-        opts_keys = [list(self.all_keys_from(opts)) for opts in self.options]
-        if self.prefix:
-            prefix_key = "{0}.".format('.'.join(self.prefix or ""))
-        else:
-            prefix_key = ""
-
-        lst = list(key[len(prefix_key):] for key in list(chain.from_iterable(opts_keys + all_overrides)) if key.startswith(prefix_key))
-        result = []
-        for key in lst:
-            key_with_dot = "{0}.".format(key)
-            result = [thing for thing in result if not thing.startswith(key_with_dot)]
-            result.append(key)
-        return set(result)
+    def __delitem__(self, path):
+        """Delete a key from the storage"""
+        self.storage.delete(self.prefixed_path_string(path))
 
     def __iter__(self):
         """Iterate over the keys"""
@@ -335,31 +153,47 @@ class MergedOptions(Mapping):
         """Get number of keys we have"""
         return len(list(self.keys()))
 
+    def __eq__(self, other):
+        """Equal to another merged options if has same storage and prefix"""
+        return isinstance(other, self.__class__) and other.storage is self.storage and other.prefix_list == self.prefix_list
+
+    def values_for(self, path):
+        """Get all known values for some path"""
+        path = self.prefixed_path_string(path)
+        for info in self.storage.get_info(path):
+            yield info.value_after(path)
+
+    def prefixed(self, path):
+        """Return a MergedOptions prefixed to this path"""
+        if isinstance(path, six.string_types):
+            path = [path]
+        return self.__class__(self.prefixed_path_list(path), storage=self.storage)
+
+    def prefixed_path_list(self, path):
+        """Proxy the prefixed_path_list helper with prefix from this instance"""
+        return prefixed_path_list(path, self.prefix_list)
+
+    def prefixed_path_string(self, path):
+        """Proxy the prefixed_path_string helper with prefix from this instance"""
+        return prefixed_path_string(path, self.prefix_string)
+
+    def keys(self):
+        """Return a de-duplicated list of the keys we know about"""
+        for key in self.storage.keys_after(self.prefix_string):
+            prefixless = without_prefix(key, self.prefix_list)
+            if prefixless:
+                yield prefixless
+
     def items(self):
-        """Get everything as a concrete dictionary"""
-        top = {}
-        keys = self.all_keys()
-        for key in keys:
-            result = top
-            split = key.split('.')
-            start, last = split[:-1], split[-1]
-            for part in start:
-                if part not in result:
-                    result[part] = {}
-                result = result[part]
+        """Iterate over [(key, value), ...] pairs"""
+        for key in self.keys():
+            yield key, self[key]
 
-            if isinstance(result, dict) or isinstance(result, MergedOptions):
-                result[last] = self[key]
+    def values(self):
+        """Return the values"""
+        for key in self.keys():
+            yield self[key]
 
-                if isinstance(result[last], MergedOptions):
-                    result[last] = dict(result[last].items())
-
-        return top.items()
-
-    def as_flat(self):
-        """Return everything as flat list of [(key, val), ...]"""
-        for key in self.all_keys():
-            val = self[key]
-            if not isinstance(val, dict) and not isinstance(val, MergedOptions):
-                yield (key, val)
+    def __repr__(self):
+        return "MergedOptions({0})".format(self.prefix_string)
 

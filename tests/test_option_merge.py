@@ -1,9 +1,10 @@
 # coding: spec
 
 from option_merge import (
-      MergedOptions, NotFound, BadPrefix
+      MergedOptions, BadPrefix
     , ConverterProperty, KeyValuePairsConverter, AttributesConverter
     )
+from option_merge.helper import NotFound
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_error import DelfickErrorTestMixin

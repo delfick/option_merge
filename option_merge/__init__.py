@@ -1,5 +1,6 @@
 from option_merge.merge import ConverterProperty, KeyValuePairsConverter, AttributesConverter
-from option_merge.merge import MergedOptions, NotFound, BadPrefix
+from option_merge.merge import MergedOptions, BadPrefix
+from option_merge.helper import NotFound
 
 # Explicitly make these part of this module
 NotFound = NotFound

@@ -4,9 +4,6 @@ from itertools import chain
 from copy import deepcopy
 import six
 
-class NotFound: pass
-"""Used to signify no value was found"""
-
 class BadPrefix(DelfickError): pass
 """Used to say a prefix value is not a dictionary"""
 

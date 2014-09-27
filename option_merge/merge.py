@@ -137,6 +137,13 @@ class MergedOptions(dict, Mapping):
                 return val
         raise KeyError(path)
 
+    def get(self, path, default=None):
+        """Get some path or return default value"""
+        try:
+            return self[path]
+        except KeyError:
+            return default
+
     def __setitem__(self, path, value):
         """Set a key in the storage"""
         self.storage.add(self.prefixed_path_list([path]), value)

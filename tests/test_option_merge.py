@@ -79,6 +79,15 @@ describe TestCase, "MergedOptions":
                 self.assertIs(self.merged['blah'], val1)
             fake_values_for.assert_called_once_with('blah')
 
+        it "works with the get method":
+            val1 = mock.Mock(name="val1")
+            val2 = mock.Mock(name="val2")
+            fake_values_for = mock.Mock(name="values_for")
+            fake_values_for.return_value = [val1, val2]
+            with mock.patch.object(self.merged, 'values_for', fake_values_for):
+                self.assertIs(self.merged.get('blah'), val1)
+            fake_values_for.assert_called_once_with('blah')
+
     describe "Setting an item":
         it "adds to data":
             self.merged["a"] = 1

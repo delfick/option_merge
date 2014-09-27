@@ -67,15 +67,30 @@ describe TestCase, "MergedOptions":
 
     describe "testing inclusion":
         it "says yes if a key is in the option merge":
-            merge = MergedOptions.using({"one": "two", "three": {"four": "five"}}, {"three": 3})
+            merge = MergedOptions.using({"one": "two", "three": {"four": "five"}}, {"three": 3, "nine.ten": {"eleven": 1}})
             assert "one" in merge
             assert "three.four" in merge
             assert "three" in merge
+            assert "nine.ten.eleven" in merge
             del merge["three"]
             assert "three.four" in merge
 
             assert "three.seven" not in merge
             assert "eight" not in merge
+
+        it "works with lists":
+            merge = MergedOptions.using({"one": "two", "three": {"four": "five"}}, {"three": 3, "nine.ten": {"eleven": 1}})
+            assert ["one"] in merge
+            assert ["three", "four"] in merge
+            assert ["three"] in merge
+            del merge["three"]
+            assert ["three", "four"] in merge
+
+            assert ["three", "seven"] not in merge
+            assert ["eight"] not in merge
+
+            assert ["nine.ten", "eleven"] in merge
+            assert ["nine", "ten", "eleven"] in merge
 
     describe "Getting an item":
         it "raises a KeyError if the key doesn't exist":

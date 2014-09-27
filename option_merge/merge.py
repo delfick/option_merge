@@ -174,6 +174,8 @@ class MergedOptions(dict, Mapping):
 
     def values_for(self, path):
         """Get all known values for some path"""
+        if isinstance(path, list):
+            path = dot_joiner(path)
         path = self.prefixed_path_string(path)
         for info in self.storage.get_info(path):
             yield info.value_after(path)

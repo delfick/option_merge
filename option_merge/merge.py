@@ -137,6 +137,14 @@ class MergedOptions(dict, Mapping):
                 return val
         raise KeyError(path)
 
+    def __contains__(self, path):
+        """Implement membership in terms of __getitem__"""
+        try:
+            self[path]
+            return True
+        except KeyError:
+            return False
+
     def get(self, path, default=None):
         """Get some path or return default value"""
         try:

@@ -1,9 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
       name = "option_merge"
     , version = "0.8"
-    , py_modules = ['option_merge']
+    , packages = ['option_merge'] + ['option_merge.%s' % pkg for pkg in find_packages('option_merge')]
+    , include_package_data = True
 
     , install_requires =
       [ 'six'

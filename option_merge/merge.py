@@ -154,6 +154,8 @@ class MergedOptions(dict, Mapping):
 
     def source_for(self, path):
         """Proxy self.storage.source_for"""
+        if isinstance(path, list):
+            path = dot_joiner(path)
         return self.storage.source_for(self.prefixed_path_string(path))
 
     def __setitem__(self, path, value):

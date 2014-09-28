@@ -10,12 +10,12 @@ import mock
 
 class TestCase(unittest.TestCase, DelfickErrorTestMixin): pass
 
-d1 = mock.Mock(name="d1")
-d2 = mock.Mock(name="d2")
-d3 = mock.Mock(name="d3")
-d4 = mock.Mock(name="d4")
-d5 = mock.Mock(name="d5")
-d6 = mock.Mock(name="d6")
+d1 = mock.Mock(name="d1", spec=[])
+d2 = mock.Mock(name="d2", spec=[])
+d3 = mock.Mock(name="d3", spec=[])
+d4 = mock.Mock(name="d4", spec=[])
+d5 = mock.Mock(name="d5", spec=[])
+d6 = mock.Mock(name="d6", spec=[])
 
 p1 = mock.Mock(name="p1")
 p2 = mock.Mock(name="p2")

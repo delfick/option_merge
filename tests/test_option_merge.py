@@ -232,6 +232,13 @@ describe TestCase, "MergedOptions":
                 self.merged['a']["c"] = {'c':5, "d":8}
                 self.assertEqual(sorted(self.merged.keys()), sorted(["a", "b"]))
 
+            it "returns empty if there are no keys":
+                opts = MergedOptions()
+                self.assertEqual(list(opts.keys()), [])
+
+                opts = MergedOptions.using({"items": MergedOptions()})
+                self.assertEqual(list(opts["items"].keys()), [])
+
     describe "Iteration":
         it "just goes through the keys":
             fake_keys = mock.Mock(name="keys")
@@ -267,6 +274,13 @@ describe TestCase, "MergedOptions":
             del self.merged['a.c']
             self.assertEqual(sorted(self.merged.items()), sorted({"b":self.merged.prefixed("b"), "a":self.merged.prefixed("a")}.items()))
             self.assertEqual(sorted((k, dict(v.items())) for k, v in self.merged.items()), sorted({"b":{'c': 9}, "a":{'c': 4, 'd':8}}.items()))
+
+        it "returns empty if there are no values":
+            opts = MergedOptions()
+            self.assertEqual(list(opts.items()), [])
+
+            opts = MergedOptions.using({"items": MergedOptions()})
+            self.assertEqual(list(opts["items"].items()), [])
 
 describe TestCase, "Converters":
     it "has a KeyValuePairs converter on MergedOptions":

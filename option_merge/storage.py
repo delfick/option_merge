@@ -113,6 +113,9 @@ class Storage(object):
 
     def get_info(self, path):
         yielded = False
+        if not self.data and not path:
+            return
+
         for info_path, data, source in self.data:
             dotted_info_path = dot_joiner(info_path)
             if not info_path or not path or path == dotted_info_path or path.startswith("{0}.".format(dotted_info_path)) or dotted_info_path.startswith("{0}.".format(path)):

@@ -79,14 +79,18 @@ class Storage(object):
             return []
 
         for info in self.get_info(path, chain + [path]):
+            source = info.source
+            if callable(info.source):
+                source = info.source()
+
             if dot_joiner(info.path) == path and not isinstance(info.data, dict):
-                if isinstance(info.source, list):
-                    return [thing for thing in info.source]
+                if isinstance(source, list):
+                    return [thing for thing in source]
                 else:
-                    return [info.source]
+                    return [source]
             else:
-                if info.source not in sources:
-                    sources.append(info.source)
+                if source not in sources:
+                    sources.append(source)
 
         if sources:
             return sources
@@ -132,8 +136,7 @@ class Storage(object):
                     if info_path:
                         get_at = path[len(dotted_info_path)+1:]
                     found_path, val = value_at(data, get_at)
-                    if hasattr(data, "source_for"):
-                        source = data.source_for(get_at, chain)
+                    source = self.make_source_for_function(data, get_at, chain, default=source)
                     yield Path(info_path + found_path, val, source)
                     yielded = True
                 except NotFound:
@@ -141,6 +144,15 @@ class Storage(object):
 
         if not yielded:
             raise KeyError(path)
+
+    def make_source_for_function(self, obj, path, chain, default=None):
+        """Return us a function that will get the source for some path on the specified obj"""
+        def source_for():
+            if hasattr(obj, "source_for"):
+                return data.source_for(path, chain)
+            else:
+                return default
+        return source_for
 
     def keys_after(self, path):
         """Get all the keys after this path"""

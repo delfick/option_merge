@@ -183,9 +183,9 @@ describe TestCase, "Storage":
                   ]
                 )
 
-            self.assertEqual(list(self.storage.get_info("a.bd")), [Path(["a", "bd"], d4, s1), Path(["a", "bd"], {"1": d4}, s2)])
-            self.assertEqual(list(self.storage.get_info("a.b.c")), [Path(["a", "b", "c"], {"d": {"e": d6}}, s6), Path(["a", "b", "c", "d", "e"], d5, s5), Path(["a", "b", "c"], d1, s1)])
-            self.assertEqual(list(self.storage.get_info("a.bd.1")), [Path(["a", "bd", "1"], d4, s2)])
+            self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.bd")), [(["a", "bd"], d4, s1), (["a", "bd"], {"1": d4}, s2)])
+            self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.b.c")), [(["a", "b", "c"], {"d": {"e": d6}}, s6), (["a", "b", "c", "d", "e"], d5, s5), (["a", "b", "c"], d1, s1)])
+            self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.bd.1")), [(["a", "bd", "1"], d4, s2)])
 
         it "returns Path objects if that's what it finds":
             self.storage.add(["a", "b", "c"], d1, source=s1)
@@ -194,7 +194,7 @@ describe TestCase, "Storage":
             self.storage.add(["a", "bd"], {"1": d4}, source=s4)
             self.assertEqual(self.storage.data, [(["a", "bd"], {"1":d4}, s4), (["a", "b", "d",], d3, s3), (["b", "c"], d2, s2), (["a", "b","c"], d1, s1)])
 
-            self.assertEqual(list(self.storage.get_info("a")), [Path(["a", "bd"], {"1": d4}, s4), Path(["a", "b", "d"], d3, s3), Path(["a", "b", "c"], d1, s1)])
+            self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a")), [(["a", "bd"], {"1": d4}, s4), (["a", "b", "d"], d3, s3), (["a", "b", "c"], d1, s1)])
 
         it "raises KeyError if no key is found":
             self.storage.add(["a", "b", "c"], d1)

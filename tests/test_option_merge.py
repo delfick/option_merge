@@ -44,6 +44,13 @@ describe TestCase, "MergedOptions":
         merged = MergedOptions.using(options1, options2, source="somewhere")
         self.assertEqual(merged.storage.data, [([], options2, "somewhere"), ([], options1, "somewhere")])
 
+    it "doesn't infinitely recurse when has self referential information":
+        data = MergedOptions.using({"items": {}})
+        data["items"] = data
+        options2 = MergedOptions.using(data, {"items": data["items"]})
+        print(list(options2["items"].items()))
+        assert True, "It didn't reach maimum recursion depth"
+
     describe "Adding more options":
 
         it "has method for adding more options":

@@ -70,10 +70,15 @@ class Storage(object):
             return info.data
         raise KeyError(path)
 
-    def source_for(self, path):
+    def source_for(self, path, chain=None):
         """Find all the sources for a given path"""
         sources = []
-        for info in self.get_info(path):
+        if chain is None:
+            chain = []
+        if path in chain:
+            return []
+
+        for info in self.get_info(path, chain + [path]):
             if dot_joiner(info.path) == path and not isinstance(info.data, dict):
                 if isinstance(info.source, list):
                     return [thing for thing in info.source]
@@ -111,10 +116,13 @@ class Storage(object):
     ###   IMPLEMENTATION
     ########################
 
-    def get_info(self, path):
+    def get_info(self, path, chain=None):
         yielded = False
         if not self.data and not path:
             return
+
+        if chain is None:
+            chain = []
 
         for info_path, data, source in self.data:
             dotted_info_path = dot_joiner(info_path)
@@ -125,7 +133,7 @@ class Storage(object):
                         get_at = path[len(dotted_info_path)+1:]
                     found_path, val = value_at(data, get_at)
                     if hasattr(data, "source_for"):
-                        source = data.source_for(get_at)
+                        source = data.source_for(get_at, chain)
                     yield Path(info_path + found_path, val, source)
                     yielded = True
                 except NotFound:

@@ -152,11 +152,11 @@ class MergedOptions(dict, Mapping):
         except KeyError:
             return default
 
-    def source_for(self, path):
+    def source_for(self, path, chain=None):
         """Proxy self.storage.source_for"""
         if isinstance(path, list):
             path = dot_joiner(path)
-        return self.storage.source_for(self.prefixed_path_string(path))
+        return self.storage.source_for(self.prefixed_path_string(path), chain)
 
     def __setitem__(self, path, value):
         """Set a key in the storage"""

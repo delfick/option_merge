@@ -149,7 +149,7 @@ class Storage(object):
         """Return us a function that will get the source for some path on the specified obj"""
         def source_for():
             if hasattr(obj, "source_for"):
-                return data.source_for(path, chain)
+                return obj.source_for(path, chain)
             else:
                 return default
         return source_for

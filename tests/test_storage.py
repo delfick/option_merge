@@ -290,6 +290,12 @@ describe TestCase, "Path":
             p = Path(["1", "2"], {"a":3, "b":4}, s1)
             self.assertEqual(sorted(p.keys_after("1.2")), sorted(["a", "b"]))
 
+            p = Path(["1"], {"a":3, "b":4}, s1)
+            self.assertEqual(sorted(p.keys_after("1")), sorted(["a", "b"]))
+
+            p = Path([], {"a": {1:2}})
+            self.assertEqual(sorted(p.keys_after("a")), sorted([1]))
+
         it "raises NotFound if no match":
             p = Path(["1", "2"], {"a":3, "b":4}, s1)
             with self.fuzzyAssertRaisesError(NotFound):
@@ -301,6 +307,11 @@ describe TestCase, "Path":
         it "returns first key after part if path is bigger":
             p = Path(["1", "2", "3"], {"a":3, "b":4}, s1)
             self.assertEqual(sorted(p.keys_after("1")), sorted(["2"]))
+
+        it "raises NotFound if ask for a bigger path than exists":
+            p = Path(["1", "2", "3"], {"a":3, "b":4}, s1)
+            with self.fuzzyAssertRaisesError(NotFound):
+               sorted(p.keys_after("1.2.3.4"))
 
     describe "value_after":
         it "returns value":
@@ -326,3 +337,6 @@ describe TestCase, "Path":
             with self.fuzzyAssertRaisesError(NotFound):
                 p.value_after("a.c")
 
+            p = Path(["1", "2", "3"], {"a":3, "b":4}, s1)
+            with self.fuzzyAssertRaisesError(NotFound):
+               p.value_after("1.2.3.4")

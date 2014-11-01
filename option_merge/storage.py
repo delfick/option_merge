@@ -18,10 +18,18 @@ class Path(namedtuple("Path", ("path", "data", "source"))):
             else:
                 raise NotFound
 
+        if not parts and prefix and isinstance(self.data, dict) and prefix not in self.data:
+            raise NotFound
+
         if parts:
             yield parts[0]
         elif isinstance(self.data, dict):
-            for key in self.data.keys():
+            data = self.data
+
+            if prefix:
+                data = data[prefix]
+
+            for key in data.keys():
                 yield key
 
     def value_after(self, prefix):

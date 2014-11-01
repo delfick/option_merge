@@ -1,6 +1,6 @@
 # coding: spec
 
-from option_merge.storage import Storage, Path, Path
+from option_merge.storage import Storage, Path, Path, Converter
 from option_merge.helper import NotFound
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -16,6 +16,8 @@ d3 = mock.Mock(name="d3", spec=[])
 d4 = mock.Mock(name="d4", spec=[])
 d5 = mock.Mock(name="d5", spec=[])
 d6 = mock.Mock(name="d6", spec=[])
+d7 = mock.Mock(name="d7", spec=[])
+d8 = mock.Mock(name="d8", spec=[])
 
 p1 = mock.Mock(name="p1")
 p2 = mock.Mock(name="p2")
@@ -30,6 +32,13 @@ s3 = mock.Mock(name="s3")
 s4 = mock.Mock(name="s4")
 s5 = mock.Mock(name="s5")
 s6 = mock.Mock(name="s6")
+
+c1 = mock.Mock(name="c1")
+c2 = mock.Mock(name="c2")
+c3 = mock.Mock(name="c3")
+c4 = mock.Mock(name="c4")
+c5 = mock.Mock(name="c5")
+c6 = mock.Mock(name="c6")
 
 describe TestCase, "Storage":
     before_each:
@@ -49,37 +58,40 @@ describe TestCase, "Storage":
         source1 = mock.Mock(name="source1")
         source2 = mock.Mock(name="source2")
 
+        converter1 = mock.Mock(name="converter1")
+        converter2 = mock.Mock(name="converter2")
+
         self.assertEqual(self.storage.deleted, [])
         self.assertEqual(self.storage.data, [])
 
-        self.storage.add(path1, data1, source=source1)
+        self.storage.add(path1, data1, source=source1, converter=converter1)
         self.assertEqual(self.storage.deleted, [])
-        self.assertEqual(self.storage.data, [(path1, data1, source1)])
+        self.assertEqual(self.storage.data, [(path1, data1, source1, converter1)])
 
-        self.storage.add(path2, data2, source=source2)
+        self.storage.add(path2, data2, source=source2, converter=converter2)
         self.assertEqual(self.storage.deleted, [])
-        self.assertEqual(self.storage.data, [(path2, data2, source2), (path1, data1, source1)])
+        self.assertEqual(self.storage.data, [(path2, data2, source2, converter2), (path1, data1, source1, converter1)])
 
     describe "Deleting":
         it "removes first thing with the same path":
             self.storage.add(["a", "b"], d1)
             self.storage.add(["b", "c"], d2)
             self.storage.add(["a", "b"], d3)
-            self.assertEqual(self.storage.data, [(["a", "b"], d3, None), (["b", "c"], d2, None), (["a", "b"], d1, None)])
+            self.assertEqual(self.storage.data, [(["a", "b"], d3, None, None), (["b", "c"], d2, None, None), (["a", "b"], d1, None, None)])
             self.storage.delete("a.b")
-            self.assertEqual(self.storage.data, [(["b", "c"], d2, None), (["a", "b"], d1, None)])
+            self.assertEqual(self.storage.data, [(["b", "c"], d2, None, None), (["a", "b"], d1, None, None)])
 
         it "removes first thing starting with the same path":
             self.storage.add(["a", "b", "c"], d1)
             self.storage.add(["b", "c"], d2)
             self.storage.add(["a", "b", "d"], d3)
             self.storage.add(["a", "bd"], d4)
-            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None), (["a", "b", "d"], d3, None), (["b", "c"], d2, None), (["a", "b", "c"], d1, None)])
+            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None, None), (["a", "b", "d"], d3, None, None), (["b", "c"], d2, None, None), (["a", "b", "c"], d1, None, None)])
             self.storage.delete("a.b")
-            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None), (["b", "c"], d2, None), (["a", "b", "c"], d1, None)])
+            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None, None), (["b", "c"], d2, None, None), (["a", "b", "c"], d1, None, None)])
 
             self.storage.delete("a.b")
-            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None), (["b", "c"], d2, None)])
+            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None, None), (["b", "c"], d2, None, None)])
 
         it "deletes inside the info if it can":
             self.storage.add(["a", "b", "c"], d1)
@@ -106,7 +118,7 @@ describe TestCase, "Storage":
             self.storage.add(["b", "c"], d2)
             self.storage.add(["a", "b", "d"], d3)
             self.storage.add(["a", "bd"], d4)
-            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None), (["a", "b", "d"], d3, None), (["b", "c"], d2, None), (["a", "b", "c"], d1, None)])
+            self.assertEqual(self.storage.data, [(["a", "bd"], d4, None, None), (["a", "b", "d"], d3, None, None), (["b", "c"], d2, None, None), (["a", "b", "c"], d1, None, None)])
 
             with self.fuzzyAssertRaisesError(KeyError, "a.c"):
                 self.storage.delete("a.c")
@@ -115,16 +127,16 @@ describe TestCase, "Storage":
             self.storage.add([], {"a": "b"})
             self.storage.add([], {"c": "d"})
             self.storage.add([], {"a": {"d": "e"}})
-            self.assertEqual(self.storage.data, [([], {"a": {"d": "e"}}, None), ([], {"c": "d"}, None), ([], {"a": "b"}, None)])
+            self.assertEqual(self.storage.data, [([], {"a": {"d": "e"}}, None, None), ([], {"c": "d"}, None, None), ([], {"a": "b"}, None, None)])
 
             self.storage.delete("a.d")
-            self.assertEqual(self.storage.data, [([], {"a": {}}, None), ([], {"c": "d"}, None), ([], {"a": "b"}, None)])
+            self.assertEqual(self.storage.data, [([], {"a": {}}, None, None), ([], {"c": "d"}, None, None), ([], {"a": "b"}, None, None)])
 
             self.storage.delete("a")
-            self.assertEqual(self.storage.data, [([], {}, None), ([], {"c": "d"}, None), ([], {"a": "b"}, None)])
+            self.assertEqual(self.storage.data, [([], {}, None, None), ([], {"c": "d"}, None, None), ([], {"a": "b"}, None, None)])
 
             self.storage.delete("a")
-            self.assertEqual(self.storage.data, [([], {}, None), ([], {"c": "d"}, None), ([], {}, None)])
+            self.assertEqual(self.storage.data, [([], {}, None, None), ([], {"c": "d"}, None, None), ([], {}, None, None)])
 
     describe "Delete from data":
         it "returns False if the data is not a dictionary":
@@ -165,25 +177,35 @@ describe TestCase, "Storage":
 
     describe "Getting info":
         it "returns all the values it finds":
+
+            convert1 = mock.Mock(name="convert1")
+            convert1.return_value = d7
+            converter1 = Converter(convert=convert1, convert_path="a.bd")
+
+            convert2 = mock.Mock(name="convert2")
+            convert2.return_value = d8
+            converter2 = Converter(convert=convert2, convert_path="a.bd")
+
             self.storage.add(["a", "b", "c"], d1, source=s1)
             self.storage.add(["b", "c"], d2, source=s5)
             self.storage.add(["a", "b", "d"], d3, source=s4)
-            self.storage.add(["a", "bd"], {"1": d4}, source=s2)
-            self.storage.add([], {"a": {"bd": d4}}, source=s1)
+            self.storage.add(["a", "bd"], {"1": d4}, source=s2, converter=converter2)
+            self.storage.add([], {"a": {"bd": d4}}, source=s1, converter=converter1)
             self.storage.add(["a", "b", "c", "d", "e"], d5, source=s5)
             self.storage.add(["a", "b", "c"], {"d": {"e": d6}}, source=s6)
+
             self.assertEqual(self.storage.data
-                , [ (["a", "b", "c"], {"d": {"e": d6}}, s6)
-                  , (["a", "b", "c", "d", "e"], d5, s5)
-                  , ([], {"a": {"bd": d4}}, s1)
-                  , (["a", "bd"], {"1":d4}, s2)
-                  , (["a", "b", "d"], d3, s4)
-                  , (["b", "c"], d2, s5)
-                  , (["a", "b", "c"], d1, s1)
+                , [ (["a", "b", "c"], {"d": {"e": d6}}, s6, None)
+                  , (["a", "b", "c", "d", "e"], d5, s5, None)
+                  , ([], {"a": {"bd": d4}}, s1, converter1)
+                  , (["a", "bd"], {"1":d4}, s2, converter2)
+                  , (["a", "b", "d"], d3, s4, None)
+                  , (["b", "c"], d2, s5, None)
+                  , (["a", "b", "c"], d1, s1, None)
                   ]
                 )
 
-            self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.bd")), [(["a", "bd"], d4, s1), (["a", "bd"], {"1": d4}, s2)])
+            self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.bd")), [(["a", "bd"], d7, s1), (["a", "bd"], {"1": d4}, s2)])
             self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.b.c")), [(["a", "b", "c"], {"d": {"e": d6}}, s6), (["a", "b", "c", "d", "e"], d5, s5), (["a", "b", "c"], d1, s1)])
             self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a.bd.1")), [(["a", "bd", "1"], d4, s2)])
 
@@ -192,7 +214,7 @@ describe TestCase, "Storage":
             self.storage.add(["b", "c"], d2, source=s2)
             self.storage.add(["a", "b", "d"], d3, source=s3)
             self.storage.add(["a", "bd"], {"1": d4}, source=s4)
-            self.assertEqual(self.storage.data, [(["a", "bd"], {"1":d4}, s4), (["a", "b", "d",], d3, s3), (["b", "c"], d2, s2), (["a", "b","c"], d1, s1)])
+            self.assertEqual(self.storage.data, [(["a", "bd"], {"1":d4}, s4, None), (["a", "b", "d",], d3, s3, None), (["b", "c"], d2, s2, None), (["a", "b","c"], d1, s1, None)])
 
             self.assertEqual(list((p.path, p.data, p.source()) for p in self.storage.get_info("a")), [(["a", "bd"], {"1": d4}, s4), (["a", "b", "d"], d3, s3), (["a", "b", "c"], d1, s1)])
 
@@ -201,7 +223,7 @@ describe TestCase, "Storage":
             self.storage.add(["b", "c"], d2)
             self.storage.add(["a", "b", "d"], d3)
             self.storage.add(["a", "bd"], {"1": d4})
-            self.assertEqual(self.storage.data, [(["a", "bd"], {"1":d4}, None), (["a", "b", "d"], d3, None), (["b", "c"], d2, None), (["a", "b", "c"], d1, None)])
+            self.assertEqual(self.storage.data, [(["a", "bd"], {"1":d4}, None, None), (["a", "b", "d"], d3, None, None), (["b", "c"], d2, None, None), (["a", "b", "c"], d1, None, None)])
 
             with self.fuzzyAssertRaisesError(KeyError, "e.g"):
                 list(self.storage.get_info("e.g"))
@@ -221,7 +243,7 @@ describe TestCase, "Storage":
             with mock.patch.object(self.storage, "get_info", get_info):
                 self.assertIs(self.storage.get(path), data)
 
-            get_info.assert_called_once_with(path)
+            get_info.assert_called_once_with(path, set_val=True)
 
         it "raises KeyError if no info for that key":
             path = mock.Mock(name="path")
@@ -232,25 +254,28 @@ describe TestCase, "Storage":
                 with mock.patch.object(self.storage, "get_info", get_info):
                     self.storage.get(path)
 
-            get_info.assert_called_once_with(path)
+            get_info.assert_called_once_with(path, set_val=True)
 
     describe "Getting source":
         it "returns first non dict data source":
+            converter1 = mock.Mock(name="converter1", spec=[])
+            converter2 = mock.Mock(name="converter2", spec=[])
+
             self.storage.add(["a", "b", "c"], d1, source=s1)
-            self.storage.add(["b", "c"], d2, source=s5)
+            self.storage.add(["b", "c"], d2, source=s5, converter=converter2)
             self.storage.add(["a", "b", "d"], d3, source=s4)
             self.storage.add(["a", "bd"], {"1": d4}, source=s2)
             self.storage.add([], {"a": {"bd": d4}}, source=s1)
-            self.storage.add(["a", "b", "c", "d", "e"], d5, source=s5)
+            self.storage.add(["a", "b", "c", "d", "e"], d5, source=s5, converter=converter1)
             self.storage.add(["a", "b", "c"], {"d": {"e": d6}}, source=s6)
             self.assertEqual(self.storage.data
-                , [ (["a", "b", "c"], {"d": {"e": d6}}, s6)
-                  , (["a", "b", "c", "d", "e"], d5, s5)
-                  , ([], {"a": {"bd": d4}}, s1)
-                  , (["a", "bd"], {"1":d4}, s2)
-                  , (["a", "b", "d"], d3, s4)
-                  , (["b", "c"], d2, s5)
-                  , (["a", "b", "c"], d1, s1)
+                , [ (["a", "b", "c"], {"d": {"e": d6}}, s6, None)
+                  , (["a", "b", "c", "d", "e"], d5, s5, converter1)
+                  , ([], {"a": {"bd": d4}}, s1, None)
+                  , (["a", "bd"], {"1":d4}, s2, None)
+                  , (["a", "b", "d"], d3, s4, None)
+                  , (["b", "c"], d2, s5, converter2)
+                  , (["a", "b", "c"], d1, s1, None)
                   ]
                 )
 
@@ -340,3 +365,4 @@ describe TestCase, "Path":
             p = Path(["1", "2", "3"], {"a":3, "b":4}, s1)
             with self.fuzzyAssertRaisesError(NotFound):
                p.value_after("1.2.3.4")
+

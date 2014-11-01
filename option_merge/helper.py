@@ -20,7 +20,7 @@ def value_at(data, path, chain=None):
     for key in keys:
         if path.startswith("{0}.".format(key)):
             try:
-                return value_at(data[key], path[len(key)+1:], chain=chain + [key])
+                return value_at(data[key], path[len(key)+1:], chain=chain+[key])
             except NotFound:
                 pass
 

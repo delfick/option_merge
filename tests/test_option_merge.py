@@ -4,8 +4,8 @@ from option_merge import (
       MergedOptions, BadPrefix
     , ConverterProperty, KeyValuePairsConverter, AttributesConverter
     )
+from option_merge.storage import Storage, Converter
 from option_merge.helper import NotFound
-from option_merge.storage import Storage
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_error import DelfickErrorTestMixin
@@ -40,16 +40,17 @@ describe TestCase, "MergedOptions":
     it "has classmethod for adding options":
         options1 = mock.Mock(name="options1")
         options2 = mock.Mock(name="options2")
+        converter = mock.Mock(name="converter")
 
-        merged = MergedOptions.using(options1, options2, source="somewhere")
-        self.assertEqual(merged.storage.data, [([], options2, "somewhere"), ([], options1, "somewhere")])
+        merged = MergedOptions.using(options1, options2, source="somewhere", converter=converter)
+        self.assertEqual(merged.storage.data, [([], options2, "somewhere", converter), ([], options1, "somewhere", converter)])
 
     it "doesn't infinitely recurse when has self referential information":
         data = MergedOptions.using({"items": {}})
         data["items"] = data
         options2 = MergedOptions.using(data, {"items": data["items"]})
         print(list(options2["items"].items()))
-        assert True, "It didn't reach maimum recursion depth"
+        assert True, "It didn't reach maximum recursion depth"
 
     describe "Adding more options":
 
@@ -59,10 +60,10 @@ describe TestCase, "MergedOptions":
 
             merged = MergedOptions()
             merged.update(options1)
-            self.assertEqual(merged.storage.data, [([], options1, None)])
+            self.assertEqual(merged.storage.data, [([], options1, None, None)])
 
             merged.update(options2)
-            self.assertEqual(merged.storage.data, [([], options2, None), ([], options1, None)])
+            self.assertEqual(merged.storage.data, [([], options2, None, None), ([], options1, None, None)])
 
         it "Works when there is a prefix":
             options = MergedOptions.using({"a": {"b": 1, "c": 2}})
@@ -98,6 +99,26 @@ describe TestCase, "MergedOptions":
 
             assert ["nine.ten", "eleven"] in merge
             assert ["nine", "ten", "eleven"] in merge
+
+        it "doesn't convert when testing membership":
+            class Other(object): pass
+            other = Other()
+            d1 = mock.Mock(name="d1", spec=[])
+            convert = mock.Mock(name="convert")
+            convert.return_value = other
+
+            merge = MergedOptions()
+            converter = Converter(convert=convert, convert_path="a")
+            merge.update({"a": d1}, converter=converter)
+
+            self.assertEqual(merge.storage.data, [([], {"a": d1}, None, converter)])
+            assert "a" in merge
+            self.assertEqual(convert.mock_calls, [])
+            self.assertEqual(merge.storage.data, [([], {"a": d1}, None, converter)])
+
+            self.assertIs(merge["a"], other)
+            convert.assert_called_once_with(d1)
+            self.assertEqual(merge.storage.data, [([], {"a": other}, None, converter)])
 
     describe "Getting an item":
         it "raises a KeyError if the key doesn't exist":

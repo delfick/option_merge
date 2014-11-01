@@ -112,16 +112,15 @@ class MergedOptions(dict, Mapping):
     @classmethod
     def using(cls, *options, **kwargs):
         """Convenience for calling update multiple times"""
-        source = kwargs.get("source")
         merged = cls()
         for opts in options:
-            merged.update(opts, source=source)
+            merged.update(opts, **kwargs)
         return merged
 
-    def update(self, options, source=None):
+    def update(self, options, source=None, converter=None, **kwargs):
         """Add new options"""
         if options is None: return
-        self.storage.add(self.prefix_list, options, source=source)
+        self.storage.add(self.prefix_list, options, source=source, converter=converter)
 
     def __getitem__(self, path):
         """
@@ -138,9 +137,12 @@ class MergedOptions(dict, Mapping):
         raise KeyError(path)
 
     def __contains__(self, path):
-        """Implement membership in terms of __getitem__"""
+        """Ask storage if it has a path"""
+        if isinstance(path, (list, tuple)):
+            path = dot_joiner(path)
+
         try:
-            self[path]
+            self.storage.get(self.prefixed_path_string(path), set_val=False)
             return True
         except KeyError:
             return False
@@ -156,7 +158,7 @@ class MergedOptions(dict, Mapping):
         """Proxy self.storage.source_for"""
         if isinstance(path, list):
             path = dot_joiner(path)
-        return self.storage.source_for(self.prefixed_path_string(path), chain)
+        return self.storage.source_for(self.prefixed_path_string(path), chain, set_val=False)
 
     def __setitem__(self, path, value):
         """Set a key in the storage"""

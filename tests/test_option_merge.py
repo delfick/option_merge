@@ -197,6 +197,22 @@ describe TestCase, "MergedOptions":
             values = list(self.merged.values_for('b'))
             self.assertEqual(values, [{'d':8}, {}])
 
+        it "can delete lists":
+            self.merged.update({'a':1, 'b':{'c':5}})
+            self.merged.update({'a':{'c':4}, 'b':{'c':6, 'd':8}})
+            self.merged['a'] = {'c':5}
+
+            values = list(self.merged.values_for('b'))
+            self.assertEqual(values, [{'c':6, 'd':8}, {'c':5}])
+
+            del self.merged[['b', 'c']]
+            values = list(self.merged.values_for('b'))
+            self.assertEqual(values, [{'d':8}, {'c':5}])
+
+            del self.merged[['b', 'c']]
+            values = list(self.merged.values_for('b'))
+            self.assertEqual(values, [{'d':8}, {}])
+
     describe "Getting all values for a key":
         it "finds all the values":
             self.merged.update({'a':1, 'b':{'c':5}})

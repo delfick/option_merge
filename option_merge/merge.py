@@ -164,6 +164,8 @@ class MergedOptions(dict, Mapping):
 
     def __delitem__(self, path):
         """Delete a key from the storage"""
+        if not isinstance(path, six.string_types):
+            path = dot_joiner(path)
         self.storage.delete(self.prefixed_path_string(path))
 
     def __iter__(self):

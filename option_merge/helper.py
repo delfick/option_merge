@@ -77,6 +77,9 @@ def dot_joiner(lst):
     """Join list of strings with a single dot in between each"""
     result = []
     for part in lst:
+        if isinstance(part, (list, tuple)):
+            part = ''.join(part)
+
         while part and part.startswith("."):
             part = part[1:]
 

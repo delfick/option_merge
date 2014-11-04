@@ -1,3 +1,5 @@
+import six
+
 class NotFound(Exception): pass
 """Used to signify no value was found"""
 
@@ -81,6 +83,9 @@ def prefixed_path_string(path, prefix=""):
 def dot_joiner(lst):
     """Join list of strings with a single dot in between each"""
     result = []
+    if isinstance(lst, six.string_types):
+        return lst
+
     for part in lst:
         if isinstance(part, (list, tuple)):
             part = ''.join(part)

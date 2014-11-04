@@ -115,6 +115,9 @@ describe TestCase, "dot_joiner":
         for blahpos, stuffpos in (list(itertools.product(blah_possibilities, stuff_possibilities))):
             self.assertEqual(dot_joiner([blahpos, stuffpos]), "blah.stuff")#
 
+    it "ignores strings":
+        self.assertEqual(dot_joiner("blah"), "blah")
+
 describe TestCase, "make_dict":
     it "returns just with first and data if no rest":
         data = mock.Mock(name="data")

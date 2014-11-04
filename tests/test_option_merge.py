@@ -52,6 +52,14 @@ describe TestCase, "MergedOptions":
         print(list(options2["items"].items()))
         assert True, "It didn't reach maximum recursion depth"
 
+    it "doesn't infinitely recurse when has self referential information added afterwards":
+        data = MergedOptions.using({"items": {"a":1}})
+        items = data["items"]
+        self.assertIs(items["a"], 1)
+        data.update({"items": items})
+        self.assertIs(items["a"], 1)
+        assert True, "It didn't reach maximum recursion depth"
+
     describe "Adding more options":
 
         it "has method for adding more options":

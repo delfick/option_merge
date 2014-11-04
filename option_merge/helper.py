@@ -1,7 +1,7 @@
 class NotFound(Exception): pass
 """Used to signify no value was found"""
 
-def value_at(data, path, chain=None):
+def value_at(data, path, called_from=None, chain=None):
     """Return the value at this path"""
     if not chain:
         chain = []
@@ -20,7 +20,12 @@ def value_at(data, path, chain=None):
     for key in keys:
         if path.startswith("{0}.".format(key)):
             try:
-                return value_at(data[key], path[len(key)+1:], chain=chain+[key])
+                prefix = path[len(key)+1:]
+                storage = getattr(data[key], "storage", None)
+                if storage and called_from is storage:
+                    raise NotFound
+
+                return value_at(data[key], prefix, called_from, chain=chain+[key])
             except NotFound:
                 pass
 

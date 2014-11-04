@@ -157,7 +157,7 @@ class Storage(object):
                     get_at = path
                     if info_path:
                         get_at = path[len(dotted_info_path)+1:]
-                    found_path, val = value_at(data, get_at)
+                    found_path, val = value_at(data, get_at, self)
                 except NotFound:
                     continue
 

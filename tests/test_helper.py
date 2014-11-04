@@ -1,6 +1,7 @@
 # coding: spec
 
 from option_merge.helper import value_at, NotFound, without_prefix, prefixed_path_list, prefixed_path_string, dot_joiner, make_dict
+from option_merge import MergedOptions
 import itertools
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -50,6 +51,12 @@ describe TestCase, "value_at":
         value2 = mock.Mock(name="value2")
         data = {"blah": {"meh": {"stuff": value}}, "blah.meh": {"tree": 3}}
         self.assertEqual(value_at(data, "blah.meh.stuff"), (["blah", "meh", "stuff"], value))
+
+    it "skips paths with the same storage":
+        data = MergedOptions.using({"a": "blah"})
+        self.assertEqual(value_at(data, "a"), (["a"], "blah"))
+        data["a"] = data["a"]
+        self.assertEqual(value_at(data, "a"), (["a"], "blah"))
 
 describe TestCase, "without_prefix":
     before_each:

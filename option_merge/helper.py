@@ -80,7 +80,11 @@ def prefixed_path_string(path, prefix=""):
         result.append(path)
     return '.'.join(result)
 
-def dot_joiner(lst):
+def dot_joiner(*lsts):
+    """Join lists of list of strings with a single dot in between each"""
+    return '.'.join(dot_joiner_path(lst) for lst in lsts)
+
+def dot_joiner_path(lst):
     """Join list of strings with a single dot in between each"""
     result = []
     if isinstance(lst, six.string_types):

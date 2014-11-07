@@ -8,12 +8,20 @@ class Converter(namedlist("Converter", ["convert", ("convert_path", None)])):
     def __init__(self, *args, **kwargs):
         super(Converter, self).__init__(*args, **kwargs)
         self.converted = []
+        self.activated = False
 
-    def __call__(self, *args, **kwargs):
-        return self.convert(*args, **kwargs)
+    def __call__(self, data):
+        if self.activated:
+            return self.convert(data)
+        else:
+            return data
+
+    def activate(self):
+        self.activated = True
 
     def done(self, path):
-        self.converted.append(path)
+        if self.activated:
+            self.converted.append(path)
 
 class Path(namedlist("Path", ["path", "data", ("source", None)])):
 

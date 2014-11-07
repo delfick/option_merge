@@ -97,8 +97,11 @@ class MergedOptions(dict, Mapping):
     Attributes = ConverterProperty(AttributesConverter)
     KeyValuePairs = ConverterProperty(KeyValuePairsConverter)
 
-    def __init__(self, prefix=None, storage=None):
+    def __init__(self, prefix=None, storage=None, dont_prefix=None):
         self.prefix_list = prefix
+        self.dont_prefix = dont_prefix
+        if not self.dont_prefix:
+            self.dont_prefix = []
         if not self.prefix_list:
             self.prefix_list = []
         if isinstance(self.prefix_list, six.string_types):
@@ -112,7 +115,9 @@ class MergedOptions(dict, Mapping):
     @classmethod
     def using(cls, *options, **kwargs):
         """Convenience for calling update multiple times"""
-        merged = cls()
+        storage = kwargs.get('storage')
+        dont_prefix = kwargs.get('dont_prefix')
+        merged = cls(storage=storage, dont_prefix=dont_prefix)
         for opts in options:
             merged.update(opts, **kwargs)
         return merged
@@ -130,7 +135,9 @@ class MergedOptions(dict, Mapping):
         Raise KeyError if nothing has the specified key
         """
         for val in self.values_for(path):
-            if isinstance(val, dict):
+            if any(isinstance(val, unprefixed) for unprefixed in self.dont_prefix):
+                return val
+            elif isinstance(val, dict):
                 return self.prefixed(path)
             else:
                 return val
@@ -194,7 +201,7 @@ class MergedOptions(dict, Mapping):
         """Return a MergedOptions prefixed to this path"""
         if isinstance(path, six.string_types):
             path = [path]
-        return self.__class__(self.prefixed_path_list(path), storage=self.storage)
+        return self.__class__(self.prefixed_path_list(path), storage=self.storage, dont_prefix=self.dont_prefix)
 
     def prefixed_path_list(self, path):
         """Proxy the prefixed_path_list helper with prefix from this instance"""

@@ -125,6 +125,8 @@ class MergedOptions(dict, Mapping):
     def update(self, options, source=None, converter=None, **kwargs):
         """Add new options"""
         if options is None: return
+        if converter:
+            converter.convert_path = dot_joiner(self.prefix_list, converter.convert_path)
         self.storage.add(self.prefix_list, options, source=source, converter=converter)
 
     def __getitem__(self, path):

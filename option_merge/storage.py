@@ -169,9 +169,10 @@ class Storage(object):
                 except NotFound:
                     continue
 
-                if converter and set_val and path not in converter.converted:
-                    converter.done(path)
-                    val = self.convert(converter, val, dot_joiner(found_path))
+                full_path = dot_joiner(info_path + found_path)
+                if converter and set_val and full_path not in converter.converted:
+                    converter.done(full_path)
+                    val = self.convert(converter, val, full_path)
                     if found_path:
                         nxt = data
                         for part in found_path[:-1]:

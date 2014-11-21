@@ -80,31 +80,6 @@ def prefixed_path_string(path, prefix=""):
         result.append(path)
     return '.'.join(result)
 
-def dot_joiner(*lsts):
-    """Join lists of list of strings with a single dot in between each"""
-    return '.'.join(dot_joiner_path(lst) for lst in lsts)
-
-def dot_joiner_path(lst):
-    """Join list of strings with a single dot in between each"""
-    result = []
-    if isinstance(lst, six.string_types):
-        return lst
-
-    for part in lst:
-        if isinstance(part, (list, tuple)):
-            part = ''.join(part)
-
-        while part and part.startswith("."):
-            part = part[1:]
-
-        while part and part.endswith("."):
-            part = part[:-1]
-
-        if part:
-            result.append(part)
-
-    return '.'.join(result)
-
 def make_dict(first, rest, data):
     """Make a dictionary from a list of keys"""
     last = first

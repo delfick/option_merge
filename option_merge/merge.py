@@ -1,5 +1,6 @@
 from option_merge.helper import prefixed_path_list, prefixed_path_string, without_prefix, dot_joiner, make_dict
 from option_merge.storage import Storage
+from option_merge.path import Path
 
 from delfick_error import DelfickError
 from collections import Mapping

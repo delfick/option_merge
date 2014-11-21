@@ -1,3 +1,5 @@
+from option_merge.path import Path
+import fnmatch
 import six
 
 class NotFound(Exception): pass
@@ -22,7 +24,10 @@ def value_at(data, path, called_from=None, chain=None):
     for key in keys:
         if path.startswith("{0}.".format(key)):
             try:
-                prefix = path[len(key)+1:]
+                prefix = without_prefix(path, key)
+
+                key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
+
                 storage = getattr(data[key], "storage", None)
                 if storage and called_from is storage:
                     raise NotFound
@@ -38,11 +43,15 @@ def without_prefix(path, prefix=""):
     Remove the prefix from a path
 
     If the prefix isn't on this path, just return the path itself
-
-    If the path is the prefix, return the prefix
     """
-    if not prefix or not path or prefix == path:
+    if hasattr(path, 'without'):
+        return path.without(prefix)
+
+    if not prefix or not path:
         return path
+
+    if prefix == path:
+        return ""
 
     if path.startswith("{0}.".format(prefix)):
         return path[len(prefix)+1:]
@@ -57,7 +66,11 @@ def prefixed_path_list(path, prefix=None):
     if prefix is None:
         prefix = []
 
-    return prefix + path
+    from option_merge.path import Path
+    if isinstance(path, Path):
+        return path.prefixed(prefix)
+    else:
+        return prefix + path
 
 def prefixed_path_string(path, prefix=""):
     """Return the prefixed version of this string"""

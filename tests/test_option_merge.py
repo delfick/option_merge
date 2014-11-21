@@ -4,7 +4,8 @@ from option_merge import (
       MergedOptions, BadPrefix
     , ConverterProperty, KeyValuePairsConverter, AttributesConverter
     )
-from option_merge.storage import Storage, Converter
+from option_merge.converter import Converter
+from option_merge.storage import Storage
 from option_merge.helper import NotFound
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -40,10 +41,9 @@ describe TestCase, "MergedOptions":
     it "has classmethod for adding options":
         options1 = mock.Mock(name="options1")
         options2 = mock.Mock(name="options2")
-        converter = mock.Mock(name="converter")
 
-        merged = MergedOptions.using(options1, options2, source="somewhere", converter=converter)
-        self.assertEqual(merged.storage.data, [([], options2, "somewhere", converter), ([], options1, "somewhere", converter)])
+        merged = MergedOptions.using(options1, options2, source="somewhere")
+        self.assertEqual(merged.storage.data, [([], options2, "somewhere"), ([], options1, "somewhere")])
 
     it "doesn't infinitely recurse when has self referential information":
         data = MergedOptions.using({"items": {}})
@@ -68,10 +68,10 @@ describe TestCase, "MergedOptions":
 
             merged = MergedOptions()
             merged.update(options1)
-            self.assertEqual(merged.storage.data, [([], options1, None, None)])
+            self.assertEqual(merged.storage.data, [([], options1, None)])
 
             merged.update(options2)
-            self.assertEqual(merged.storage.data, [([], options2, None, None), ([], options1, None, None)])
+            self.assertEqual(merged.storage.data, [([], options2, None), ([], options1, None)])
 
         it "Works when there is a prefix":
             options = MergedOptions.using({"a": {"b": 1, "c": 2}})
@@ -115,18 +115,21 @@ describe TestCase, "MergedOptions":
             convert = mock.Mock(name="convert")
             convert.return_value = other
 
-            merge = MergedOptions()
-            converter = Converter(convert=convert, convert_path="a")
-            merge.update({"a": d1}, converter=converter)
+            merge = MergedOptions.using({"a": d1})
+            converter = Converter(convert, convert_path="a")
+            merge.add_converter(converter)
+            merge.converters.activate()
 
-            self.assertEqual(merge.storage.data, [([], {"a": d1}, None, converter)])
+            self.assertEqual(merge.storage.data, [([], {"a": d1}, None)])
             assert "a" in merge
             self.assertEqual(convert.mock_calls, [])
-            self.assertEqual(merge.storage.data, [([], {"a": d1}, None, converter)])
+            self.assertEqual(merge.storage.data, [([], {"a": d1}, None)])
 
             self.assertIs(merge["a"], other)
-            convert.assert_called_once_with(d1)
-            self.assertEqual(merge.storage.data, [([], {"a": other}, None, converter)])
+            convert.assert_called_once_with("a", d1)
+
+            self.assertIs(merge["a"], other)
+            self.assertEqual(len(convert.mock_calls), 1)
 
     describe "Getting an item":
         it "raises a KeyError if the key doesn't exist":
@@ -137,19 +140,19 @@ describe TestCase, "MergedOptions":
             val1 = mock.Mock(name="val1")
             val2 = mock.Mock(name="val2")
             fake_values_for = mock.Mock(name="values_for")
-            fake_values_for.return_value = [val1, val2]
+            fake_values_for.return_value = [(val1, False), (val2, False)]
             with mock.patch.object(self.merged, 'values_for', fake_values_for):
                 self.assertIs(self.merged['blah'], val1)
-            fake_values_for.assert_called_once_with('blah')
+            fake_values_for.assert_called_once_with('blah', ignore_converters=False)
 
         it "works with the get method":
             val1 = mock.Mock(name="val1")
             val2 = mock.Mock(name="val2")
             fake_values_for = mock.Mock(name="values_for")
-            fake_values_for.return_value = [val1, val2]
+            fake_values_for.return_value = [(val1, False), (val2, False)]
             with mock.patch.object(self.merged, 'values_for', fake_values_for):
                 self.assertIs(self.merged.get('blah'), val1)
-            fake_values_for.assert_called_once_with('blah')
+            fake_values_for.assert_called_once_with('blah', ignore_converters=False)
 
     describe "Setting an item":
         it "adds to data":
@@ -200,15 +203,15 @@ describe TestCase, "MergedOptions":
             self.merged['a'] = {'c':5}
 
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'c':6, 'd':8}, {'c':5}])
+            self.assertEqual(values, [({'c':6, 'd':8}, False), ({'c':5}, False)])
 
             del self.merged['b']['c']
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}, {'c':5}])
+            self.assertEqual(values, [({'d':8}, False), ({'c':5}, False)])
 
             del self.merged['b']['c']
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}, {}])
+            self.assertEqual(values, [({'d':8}, False), ({}, False)])
 
         it "can delete dot seperated values":
             self.merged.update({'a':1, 'b':{'c':5}})
@@ -216,15 +219,15 @@ describe TestCase, "MergedOptions":
             self.merged['a'] = {'c':5}
 
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'c':6, 'd':8}, {'c':5}])
+            self.assertEqual(values, [({'c':6, 'd':8}, False), ({'c':5}, False)])
 
             del self.merged['b.c']
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}, {'c':5}])
+            self.assertEqual(values, [({'d':8}, False), ({'c':5}, False)])
 
             del self.merged['b.c']
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}, {}])
+            self.assertEqual(values, [({'d':8}, False), ({}, False)])
 
         it "can delete lists":
             self.merged.update({'a':1, 'b':{'c':5}})
@@ -232,15 +235,15 @@ describe TestCase, "MergedOptions":
             self.merged['a'] = {'c':5}
 
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'c':6, 'd':8}, {'c':5}])
+            self.assertEqual(values, [({'c':6, 'd':8}, False), ({'c':5}, False)])
 
             del self.merged[['b', 'c']]
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}, {'c':5}])
+            self.assertEqual(values, [({'d':8}, False), ({'c':5}, False)])
 
             del self.merged[['b', 'c']]
             values = list(self.merged.values_for('b'))
-            self.assertEqual(values, [{'d':8}, {}])
+            self.assertEqual(values, [({'d':8}, False), ({}, False)])
 
     describe "Getting all values for a key":
         it "finds all the values":
@@ -248,11 +251,11 @@ describe TestCase, "MergedOptions":
             self.merged.update({'a':{'c':4}, 'b':4})
             self.merged['a'] = {'c':5}
             values = list(self.merged.values_for('a'))
-            self.assertEqual(values, [{'c':5}, {'c':4}, 1])
+            self.assertEqual(values, [({'c':5}, False), ({'c':4}, False), (1, False)])
 
             self.merged['a'] = 400
             values = list(self.merged.values_for('a'))
-            self.assertEqual(values, [400, {'c': 5}, {'c':4}, 1])
+            self.assertEqual(values, [(400, False), ({'c': 5}, False), ({'c':4}, False), (1, False)])
 
     describe "Getting keys":
         describe "Getting keys on a mergedOptions":

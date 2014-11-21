@@ -4,24 +4,6 @@ from namedlist import namedlist
 import fnmatch
 import six
 
-class Converter(namedlist("Converter", ["convert", ("convert_path", None)])):
-    def __init__(self, *args, **kwargs):
-        super(Converter, self).__init__(*args, **kwargs)
-        self.converted = []
-        self.activated = False
-
-    def __call__(self, data):
-        if self.activated:
-            return self.convert(data)
-        else:
-            return data
-
-    def activate(self):
-        self.activated = True
-
-    def done(self, path):
-        if self.activated:
-            self.converted.append(path)
 
 class Storage(object):
     """Holds the dataz"""

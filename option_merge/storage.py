@@ -23,60 +23,6 @@ class Converter(namedlist("Converter", ["convert", ("convert_path", None)])):
         if self.activated:
             self.converted.append(path)
 
-class Path(namedlist("Path", ["path", "data", ("source", None)])):
-
-    def keys_after(self, prefix):
-        """All the keys after prefix"""
-        parts = [part for part in self.path]
-        for part in self.path:
-            if prefix.startswith("{0}.".format(part)) or prefix == part:
-                prefix = prefix[len(part)+1:]
-                parts.pop(0)
-            elif not prefix and parts:
-                yield parts[0]
-                return
-            else:
-                raise NotFound
-
-        if not parts and prefix and isinstance(self.data, dict) and prefix not in self.data:
-            raise NotFound
-
-        if parts:
-            yield parts[0]
-
-        data = self.data
-        if prefix:
-            if prefix not in data:
-                raise NotFound
-            data = data[prefix]
-
-        if isinstance(data, dict):
-            for key in data.keys():
-                yield key
-
-    def value_after(self, prefix):
-        """Returns the value after prefix"""
-        parts = [part for part in self.path]
-        for part in self.path:
-            if prefix.startswith("{0}.".format(part)) or prefix == part:
-                prefix = prefix[len(part)+1:]
-                parts.pop(0)
-            elif not prefix and parts:
-                return make_dict(parts[0], parts[1:], self.data)
-            else:
-                raise NotFound
-
-        if parts:
-            return make_dict(parts[0], parts[1:], self.data)
-
-        data = self.data
-        if prefix:
-            if prefix not in data:
-                raise NotFound
-            data = data[prefix]
-
-        return data
-
 class Storage(object):
     """Holds the dataz"""
 

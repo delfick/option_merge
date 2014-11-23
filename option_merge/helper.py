@@ -18,7 +18,10 @@ def value_at(data, path, called_from=None, chain=None):
 
     keys = list(reversed(sorted(data.keys())))
 
+    from option_merge.merge import MergedOptions
     if path in keys:
+        if isinstance(path, Path) and isinstance(data, MergedOptions):
+            path = path.path
         return chain + [path], data[path]
 
     for key in keys:
@@ -28,11 +31,11 @@ def value_at(data, path, called_from=None, chain=None):
 
                 key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
 
-                storage = getattr(data[key], "storage", None)
+                storage = getattr(data[key.path], "storage", None)
                 if storage and called_from is storage:
                     raise NotFound
 
-                return value_at(data[key], prefix, called_from, chain=chain+[key])
+                return value_at(data[key.path], prefix, called_from, chain=chain+[key.path])
             except NotFound:
                 pass
 
@@ -91,7 +94,7 @@ def prefixed_path_string(path, prefix=""):
         result.append(prefix)
     if path:
         result.append(path)
-    return '.'.join(result)
+    return '.'.join(unicode(part) for part in result)
 
 def make_dict(first, rest, data):
     """Make a dictionary from a list of keys"""

@@ -150,10 +150,7 @@ class Storage(object):
                     if source:
                         sources.append(source)
 
-        if sources:
-            return sources
-        else:
-            raise KeyError(path)
+        return sources
 
     def delete(self, path):
         """Delete the first instance of some path"""

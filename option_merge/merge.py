@@ -244,6 +244,16 @@ class MergedOptions(dict, Mapping):
             , ignore_converters=ignore_converters
             )
 
+    def root(self):
+        """Return a MergedOptions prefixed to this path"""
+        return self.__class__(
+              ""
+            , storage=self.storage
+            , dont_prefix=self.dont_prefix
+            , converters=self.converters
+            , ignore_converters=self.ignore_converters
+            )
+
     def keys(self):
         """Return a de-duplicated list of the keys we know about"""
         return self.storage.keys_after(self.prefix_string)

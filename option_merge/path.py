@@ -97,12 +97,12 @@ class Path(object):
                         res.append(part)
                         continue
 
-                    if base.startswith(unicode(part)):
+                    if base.startswith(unicode(dot_joiner(part))):
                         base = base[len(dot_joiner(part)):]
                         while base.startswith('.'):
                             base = base[1:]
-                    elif part.startswith(base):
-                        res.append(part[len(base)])
+                    elif dot_joiner(part).startswith(base):
+                        res.append(dot_joiner(part)[len(base):])
                         base = ""
 
             return self.using(res)

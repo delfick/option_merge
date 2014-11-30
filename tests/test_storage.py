@@ -219,7 +219,7 @@ describe TestCase, "Storage":
             it "returns found val or dict in the data from path remainder after info_path":
                 val = mock.Mock(name="val")
                 data = {'b': {'c': {'d': val}}, 'e': 1, 'f':2}
-                info_path = ["a"]
+                info_path = Path("a")
                 path = Path("a.b")
                 source = mock.Mock(name="source")
 
@@ -231,7 +231,7 @@ describe TestCase, "Storage":
             it "yields nothing if rest of path not in data":
                 val = mock.Mock(name="val")
                 data = {'e': {'c': {'d': val}}, 'f': 1, 'g':2}
-                info_path = ["a"]
+                info_path = Path("a")
                 path = Path("a.b")
                 source = mock.Mock(name="source")
 

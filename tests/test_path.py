@@ -42,10 +42,13 @@ describe TestCase, "Path":
 
 		it "returns a Path object with provided values":
 			path = mock.Mock(name="path")
+
 			converters = mock.Mock(name="converters")
 			configuration = mock.Mock(name="configuration")
 			ignore_converters = mock.Mock(name="ignore_converters")
-			converted = Path.convert(path, configuration, converters, ignore_converters)
+
+			p = Path(path, configuration=configuration, converters=converters, ignore_converters=ignore_converters)
+			converted = Path.convert(p, configuration, converters, ignore_converters)
 
 			self.assertEqual(converted.path, path)
 			self.assertIs(converted.converters, converters)

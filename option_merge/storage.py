@@ -14,6 +14,7 @@ from option_merge.path import Path
 
 from delfick_error import ProgrammerError
 from namedlist import namedlist
+import types
 import six
 
 class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
@@ -49,7 +50,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 yield list(shortened_path)[0], data, list(shortened_path)[1:]
                 return
             else:
-                prefix = Path("")
+                prefix = Path("", joined="")
         else:
             if not dot_joiner(prefix).startswith(self.path.joined()):
                 raise hp.NotFound
@@ -61,7 +62,8 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 yield "", data, []
                 return
 
-            if not isinstance(data, dict):
+            from option_merge.merge import MergedOptions
+            if type(data) not in (dict, MergedOptions):
                 raise hp.NotFound
 
             if not prefix:
@@ -70,7 +72,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 return
 
             found = False
-            for key in reversed(sorted(data.keys())):
+            for key in reversed(sorted(data.keys(), key=len)):
                 if prefix.startswith(key):
                     data = data[key]
                     prefix = prefix.without(key)

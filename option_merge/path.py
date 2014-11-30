@@ -17,28 +17,31 @@ class Path(object):
     the converters should be used or not
     """
     @classmethod
-    def convert(kls, path, configuration=None, converters=None, ignore_converters=None):
+    def convert(kls, path, configuration=None, converters=None, ignore_converters=None, joined=None):
         """
         Get us a Path object from this path
 
         If already a Path object, then return a clone of the path
         """
-        if isinstance(path, Path):
+        if hasattr(path, "clone"):
             return path.clone()
         else:
-            return Path(path, configuration, converters, ignore_converters)
+            return Path(path, configuration, converters, ignore_converters, joined=joined or (getattr(path, "joined", lambda: None)() if hasattr(path, "joined") else dot_joiner(path)))
 
-    def __init__(self, path, configuration=None, converters=None, ignore_converters=False):
+    def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
         self.path = path
+        self._joined = joined
         self.converters = converters
         self.configuration = configuration
         self.ignore_converters = ignore_converters
+        if not self.path:
+            self._joined = ""
 
     def __unicode__(self):
-        return dot_joiner(self.path)
+        return self.joined()
 
     def __str__(self):
-        return dot_joiner(self.path)
+        return self.joined()
 
     def __nonzero__(self):
         return bool(self.path)
@@ -64,16 +67,19 @@ class Path(object):
         return "<Path({0})>".format(unicode(self))
 
     def __eq__(self, other):
-        return dot_joiner(other) == dot_joiner(self.path)
+        return dot_joiner(other) == self.joined()
 
     def __ne__(self, other):
-        return dot_joiner(other) != dot_joiner(self.path)
+        return dot_joiner(other) != self.joined()
 
     def __add__(self, other):
-        return self.using(join(self, other))
+        if not other:
+            return self.clone()
+        else:
+            return self.using(join(self, other))
 
     def __hash__(self):
-        return hash(dot_joiner(self.path))
+        return hash(self.joined())
 
     def without(self, base):
         """Return a clone of this path without the base"""
@@ -85,7 +91,7 @@ class Path(object):
             path = self.path[len(dot_joiner(base)):]
             while path.startswith("."):
                 path = path[1:]
-            return self.using(path)
+            return self.using(path, joined=path)
         else:
             base = dot_joiner(base)
             if not base:
@@ -105,37 +111,44 @@ class Path(object):
                         res.append(dot_joiner(part)[len(base):])
                         base = ""
 
-            return self.using(res)
+            return self.using(res, joined=dot_joiner(res))
 
     def prefixed(self, prefix):
         """Return a clone with this prefix to the path"""
-        return self.using(join(prefix, self))
+        if not prefix:
+            return self.clone()
+        else:
+            return self.using(join(prefix, self))
 
     def startswith(self, base):
         """Does the path start with this string?"""
-        return dot_joiner(self.path).startswith(base)
+        return self.joined().startswith(base)
 
     def endswith(self, suffix):
         """Does the path end with this string?"""
-        return dot_joiner(self.path).endswith(suffix)
+        return self.joined().endswith(suffix)
 
-    def using(self, path, configuration=None, converters=None, ignore_converters=True):
+    def using(self, path, configuration=None, converters=None, ignore_converters=True, joined=None):
         """Return a clone of this path and override with provided values"""
         if configuration is None:
             configuration = self.configuration
         if converters is None:
             converters = self.converters
-        if isinstance(path, Path):
-            path = path.path
-        return self.__class__(path, configuration, converters, ignore_converters=ignore_converters)
+
+        if joined is None:
+            if hasattr(path, "joined"):
+                joined = path.joined()
+            else:
+                joined = dot_joiner(path)
+        return self.__class__(path, configuration, converters, ignore_converters=ignore_converters, joined=joined)
 
     def clone(self):
         """Return a clone of this path with all the same values"""
-        return self.using(self.path, self.configuration, self.converters, self.ignore_converters)
+        return self.using(self.path, self.configuration, self.converters, self.ignore_converters, joined=self.joined())
 
     def ignoring_converters(self, ignore_converters=True):
         """Return a clone of this path with ignore_converters set to True"""
-        return self.using(self.path, ignore_converters=ignore_converters)
+        return self.using(self.path, ignore_converters=ignore_converters, joined=self.joined())
 
     def do_conversion(self, value):
         """
@@ -178,5 +191,7 @@ class Path(object):
 
     def joined(self):
         """Return the dot_join of of the path"""
-        return dot_joiner(self.path)
+        if self._joined is None:
+            self._joined = dot_joiner(self.path)
+        return self._joined
 

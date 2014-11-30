@@ -25,7 +25,7 @@ class Path(object):
         if hasattr(path, "clone"):
             return path.clone()
         else:
-            return Path(path, configuration, converters, ignore_converters, joined=joined or (getattr(path, "joined", lambda: None)() if hasattr(path, "joined") else dot_joiner(path)))
+            return Path(path, configuration, converters, ignore_converters, joined=joined or (getattr(path, "joined", lambda: None)() if hasattr(path, "joined") else None))
 
     def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
         self.path = path

@@ -82,7 +82,8 @@ class Path(object):
 
     def without(self, base):
         """Return a clone of this path without the base"""
-        if not self.startswith(dot_joiner(base)):
+        base = dot_joiner(base)
+        if not self.startswith(base):
             from option_merge import helper as hp
             raise hp.NotFound()
 
@@ -92,7 +93,6 @@ class Path(object):
                 path = path[1:]
             return self.using(path, joined=path)
         else:
-            base = dot_joiner(base)
             if not base:
                 res = [part for part in self.path]
             else:

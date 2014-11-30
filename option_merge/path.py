@@ -127,7 +127,7 @@ class Path(object):
         """Does the path end with this string?"""
         return self.joined().endswith(suffix)
 
-    def using(self, path, configuration=None, converters=None, ignore_converters=True, joined=None):
+    def using(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
         """Return a clone of this path and override with provided values"""
         if configuration is None:
             configuration = self.configuration

@@ -276,7 +276,7 @@ class MergedOptions(dict, Mapping):
                 kwargs[key] = val
         return Path(path, **kwargs)
 
-    def converted_path(self, path, ignore_converters=True, converters=None):
+    def converted_path(self, path, ignore_converters=False, converters=None):
         """Convert a path into a Path object with a prefixed path"""
         joined = None
         if hasattr(path, "joined"):

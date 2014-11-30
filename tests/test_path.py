@@ -204,7 +204,7 @@ describe TestCase, "Path":
 			self.assertIs(new_path.path, p2)
 			self.assertIs(new_path.configuration, conf)
 			self.assertIs(new_path.converters, converters)
-			self.assertIs(new_path.ignore_converters, True)
+			self.assertIs(new_path.ignore_converters, False)
 
 		it "returns the same class with the new path and other overrides":
 			p1 = mock.Mock(name="p1")

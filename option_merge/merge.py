@@ -269,6 +269,13 @@ class MergedOptions(dict, Mapping):
     def __repr__(self):
         return "MergedOptions({0})".format(self.prefix_string)
 
+    def path(self, path, **kwargs):
+        """Return us a path instance"""
+        for key, val in (("configuration", self), ("converters", self.converters), ("ignore_converters", self.ignore_converters)):
+            if key not in kwargs:
+                kwargs[key] = val
+        return Path(path, **kwargs)
+
     def converted_path(self, path, ignore_converters=True, converters=None):
         """Convert a path into a Path object with a prefixed path"""
         joined = None

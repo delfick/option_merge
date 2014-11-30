@@ -23,7 +23,7 @@ def value_at(data, path, called_from=None, chain=None):
     from option_merge.merge import MergedOptions
     if path in keys:
         if isinstance(path, Path) and isinstance(data, MergedOptions):
-            da = data[path.path]
+            da = data.get(path.path, ignore_converters=getattr(path, "ignore_converters", False))
         else:
             da = data[path]
 
@@ -35,15 +35,20 @@ def value_at(data, path, called_from=None, chain=None):
     for key in keys:
         if path.startswith("{0}.".format(key)):
             try:
-                prefix = without_prefix(path, key)
+                prefix = Path.convert(without_prefix(path, key)).ignoring_converters(getattr(path, "ignore_converters", False))
 
                 key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
 
-                storage = getattr(data[key.path], "storage", None)
+                if isinstance(data, MergedOptions):
+                    nxt = data.get(key.path, ignore_converters=getattr(key, "ignore_converters", False))
+                else:
+                    nxt = data[key.path]
+
+                storage = getattr(nxt, "storage", None)
                 if storage and called_from is storage:
                     raise NotFound
 
-                return value_at(data[key.path], prefix, called_from, chain=chain+[key.path])
+                return value_at(nxt, prefix, called_from, chain=chain+[key.path])
             except NotFound:
                 pass
 

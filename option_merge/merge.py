@@ -154,14 +154,14 @@ class MergedOptions(dict, Mapping):
         if options is None: return
         self.storage.add(Path(self.prefix_list), options, source=source)
 
-    def __getitem__(self, path):
+    def __getitem__(self, path, ignore_converters=False):
         """
         Access some path
 
         Return the first value it comes across
         Raise KeyError if nothing has the specified key
         """
-        path = self.converted_path(path, ignore_converters=self.ignore_converters or getattr(path, "ignore_converters", False))
+        path = self.converted_path(path, ignore_converters=ignore_converters or self.ignore_converters or getattr(path, "ignore_converters", False))
         for val, return_as_is in self.values_for(path, ignore_converters=path.ignore_converters):
             if return_as_is:
                 return val
@@ -182,10 +182,10 @@ class MergedOptions(dict, Mapping):
         except KeyError:
             return False
 
-    def get(self, path, default=None):
+    def get(self, path, default=None, ignore_converters=False):
         """Get some path or return default value"""
         try:
-            return self[path]
+            return self.__getitem__(path, ignore_converters=ignore_converters)
         except KeyError:
             return default
 
@@ -216,14 +216,16 @@ class MergedOptions(dict, Mapping):
 
     def values_for(self, path, converters=None, ignore_converters=False):
         """Get all known values for some path"""
-        path = self.converted_path(path, converters=converters, ignore_converters=ignore_converters)
-        if path.converted():
-            yield path.converted_val(), True
-            return
+        path = self.converted_path(path, converters=converters, ignore_converters=ignore_converters or getattr(path, "ignore_converters", False))
+        if not path.ignore_converters:
+            if path.converted():
+                yield path.converted_val(), True
+                return
 
-        if not path.ignore_converters and path.find_converter()[1]:
-            yield path.do_conversion(self[path.ignoring_converters()])
-            return
+            if path.find_converter()[1]:
+                untouched = self[path.ignoring_converters()]
+                yield path.do_conversion(untouched)
+                return
 
         for info in self.storage.get_info(path):
             try:
@@ -251,15 +253,15 @@ class MergedOptions(dict, Mapping):
             , ignore_converters=self.ignore_converters
             )
 
-    def keys(self):
+    def keys(self, ignore_converters=False):
         """Return a de-duplicated list of the keys we know about"""
-        return self.storage.keys_after(self.prefix_string)
+        return self.storage.keys_after(self.prefix_string, ignore_converters=ignore_converters)
     reversed_keys = keys
 
-    def items(self):
+    def items(self, ignore_converters=False):
         """Iterate over [(key, value), ...] pairs"""
-        for key in self.keys():
-            yield key, self[key]
+        for key in self.keys(ignore_converters=ignore_converters):
+            yield key, self.__getitem__(key, ignore_converters=ignore_converters)
 
     def values(self):
         """Return the values"""

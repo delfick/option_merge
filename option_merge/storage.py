@@ -184,6 +184,9 @@ class Storage(object):
         if chain is None:
             chain = []
 
+        ignore_converters = ignore_converters or getattr(path, 'ignore_converters', False)
+        path = Path.convert(path).ignoring_converters(ignore_converters)
+
         for info_path, data, source in self.data:
             for full_path, found_path, val in self.determine_path_and_val(path, info_path, data, source):
                 source = self.make_source_for_function(data, found_path, chain, default=source)
@@ -232,11 +235,11 @@ class Storage(object):
                 return default
         return source_for
 
-    def keys_after(self, path):
+    def keys_after(self, path, ignore_converters=False):
         """Get all the keys after this path"""
         done = set()
         stopped = set()
-        for info in self.get_info(path):
+        for info in self.get_info(path, ignore_converters=ignore_converters):
             if hasattr(info.data, "storage") and info.data.storage is self:
                 continue
 

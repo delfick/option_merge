@@ -8,7 +8,6 @@ as well as whether the converters should be ignored or not.
 
 from option_merge.joiner import dot_joiner, join
 
-from delfick_error import ProgrammerError
 import six
 
 class Path(object):

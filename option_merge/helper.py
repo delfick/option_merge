@@ -63,17 +63,18 @@ def without_prefix(path, prefix=""):
 
 def prefixed_path_list(path, prefix=None):
     """Return the prefixed version of this path as a list"""
-    if not prefix:
-        return path
-
-    if prefix is None:
-        prefix = []
-
     from option_merge.path import Path
     if isinstance(path, Path):
-        return path.prefixed(prefix)
+        if prefix:
+            res = path.prefixed(prefix)
+        else:
+            res = path.clone()
     else:
-        return prefix + path
+        if prefix:
+            res = prefix + path
+        else:
+            res = list(path)
+    return res, dot_joiner(res)
 
 def prefixed_path_string(path, prefix=""):
     """Return the prefixed version of this string"""
@@ -89,12 +90,13 @@ def prefixed_path_string(path, prefix=""):
     while prefix and prefix.endswith("."):
         prefix = prefix[:-1]
 
-    result = []
-    if prefix:
-        result.append(prefix)
-    if path:
-        result.append(path)
-    return '.'.join(unicode(part) for part in result)
+    if not prefix:
+        return path, path
+    elif not path:
+        return prefix, prefix
+    else:
+        res = "{0}.{1}".format(prefix, path)
+        return res, res
 
 def make_dict(first, rest, data):
     """Make a dictionary from a list of keys"""

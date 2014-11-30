@@ -180,7 +180,7 @@ class MergedOptions(dict, Mapping):
             path = dot_joiner(path)
 
         try:
-            self.storage.get(self.prefixed_path_string(path))
+            self.storage.get(self.converted_path(path))
             return True
         except KeyError:
             return False
@@ -273,22 +273,17 @@ class MergedOptions(dict, Mapping):
 
     def converted_path(self, path, ignore_converters=True, converters=None):
         """Convert a path into a Path object with a prefixed path"""
-        if isinstance(path, basestring):
-            path = self.prefixed_path_string(path)
+        joined = None
+        if hasattr(path, "joined"):
+            path, joined = path, path.joined()
+        elif isinstance(path, basestring):
+            path, joined = hp.prefixed_path_string(path, self.prefix_string)
         elif isinstance(path, (list, tuple)):
-            path = self.prefixed_path_list(path)
+            path, joined = hp.prefixed_path_list(path, self.prefix_list)
 
         if converters is None:
             converters = self.converters
-        return Path.convert(path, self, converters=converters).ignoring_converters(ignore_converters)
-
-    def prefixed_path_list(self, path):
-        """Proxy the prefixed_path_list helper with prefix from this instance"""
-        return hp.prefixed_path_list(path, self.prefix_list)
-
-    def prefixed_path_string(self, path):
-        """Proxy the prefixed_path_string helper with prefix from this instance"""
-        return hp.prefixed_path_string(path, self.prefix_string)
+        return Path.convert(path, self, converters=converters, joined=joined).ignoring_converters(ignore_converters)
 
     def add_converter(self, converter):
         """Add a converter to our collection"""

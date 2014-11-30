@@ -92,27 +92,27 @@ describe TestCase, "prefixed_path_list":
         self.path = mock.Mock(name="path")
 
     it "returns path if no prefix":
-        self.assertEqual(hp.prefixed_path_list(self.path), self.path)
+        self.assertEqual(hp.prefixed_path_list([Path("1")]), (Path("1"), "1"))
 
     it "adds prepends prefix":
         p1 = mock.Mock(name="p1")
         p2 = mock.Mock(name="p2")
-        self.assertEqual(hp.prefixed_path_list([self.path], [p1, p2]), [p1, p2, self.path])
+        self.assertEqual(hp.prefixed_path_list([self.path], [p1, p2]), ([p1, p2, self.path], "{0}.{1}.{2}".format(p1.joined(), p2.joined(), self.path.joined())))
 
 describe TestCase, "prefixed_path_string":
     it "removes superfluous dots":
         for blah in ("blah", ".blah", "blah.", ".blah.", "..blah.", ".blah..", "..blah.."):
-            self.assertEqual(hp.prefixed_path_string(blah), "blah")
+            self.assertEqual(hp.prefixed_path_string(blah), ("blah", "blah"))
 
     it "joins together two paths with one dot":
         blah_possibilities = ["blah", ".blah", "blah.", ".blah.", "blah..", "..blah", "..blah.."]
         stuff_possibilities = [pos.replace("blah", "stuff") for pos in blah_possibilities]
 
         for pos in blah_possibilities:
-            self.assertEqual(hp.prefixed_path_string(pos), "blah")
+            self.assertEqual(hp.prefixed_path_string(pos), ("blah", "blah"))
 
         for blahpos, stuffpos in (list(itertools.product(blah_possibilities, stuff_possibilities))):
-            self.assertEqual(hp.prefixed_path_string(blahpos, prefix=stuffpos), "stuff.blah")#
+            self.assertEqual(hp.prefixed_path_string(blahpos, prefix=stuffpos), ("stuff.blah", "stuff.blah"))#
 
 describe TestCase, "make_dict":
     it "returns just with first and data if no rest":

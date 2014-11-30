@@ -1,3 +1,4 @@
+from option_merge.joiner import dot_joiner
 from option_merge.path import Path
 import fnmatch
 import six
@@ -16,13 +17,22 @@ def value_at(data, path, called_from=None, chain=None):
     elif path and not isinstance(data, dict):
         raise NotFound
 
-    keys = list(reversed(sorted(data.keys())))
+    if hasattr(data, "reversed_keys"):
+        keys = list(data.reversed_keys())
+    else:
+        keys = list(reversed(sorted(data.keys(), key=lambda d: len(unicode(d)))))
 
     from option_merge.merge import MergedOptions
     if path in keys:
         if isinstance(path, Path) and isinstance(data, MergedOptions):
-            path = path.path
-        return chain + [path], data[path]
+            da = data[path.path]
+        else:
+            da = data[path]
+
+        if not chain:
+            return path, da
+        else:
+            return chain + [path], da
 
     for key in keys:
         if path.startswith("{0}.".format(key)):

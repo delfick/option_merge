@@ -28,7 +28,7 @@ describe TestCase, "value_at":
         value = mock.Mock(name="value")
         path = mock.Mock(name="path")
         data = {path: value}
-        self.assertEqual(hp.value_at(data, path), ([path], value))
+        self.assertEqual(hp.value_at(data, path), (Path(path), value))
 
         c1 = mock.Mock(name="c1")
         c2 = mock.Mock(name="c2")
@@ -40,13 +40,13 @@ describe TestCase, "value_at":
         value2 = mock.Mock(name="value2")
         value3 = mock.Mock(name="value3")
         data = {"blah": {"meh": value}}
-        self.assertEqual(hp.value_at(data, "blah.meh"), (["blah", "meh"], value))
+        self.assertEqual(hp.value_at(data, "blah.meh"), (Path(["blah", "meh"]), value))
 
         data["blah.meh"] = value2
-        self.assertEqual(hp.value_at(data, "blah.meh"), (["blah.meh"], value2))
+        self.assertEqual(hp.value_at(data, "blah.meh"), (Path("blah.meh"), value2))
 
         data["blah.meh"] = {"stuff": value3}
-        self.assertEqual(hp.value_at(data, "blah.meh.stuff"), (["blah.meh", "stuff"], value3))
+        self.assertEqual(hp.value_at(data, "blah.meh.stuff"), (Path(["blah.meh", "stuff"]), value3))
 
     it "skips misleading paths":
         value = mock.Mock(name="value")
@@ -56,9 +56,9 @@ describe TestCase, "value_at":
 
     it "skips paths with the same storage":
         data = MergedOptions.using({"a": "blah"})
-        self.assertEqual(hp.value_at(data, "a"), (["a"], "blah"))
+        self.assertEqual(hp.value_at(data, "a"), (Path("a"), "blah"))
         data["a"] = data["a"]
-        self.assertEqual(hp.value_at(data, "a"), (["a"], "blah"))
+        self.assertEqual(hp.value_at(data, "a"), (Path("a"), "blah"))
 
 describe TestCase, "without_prefix":
     before_each:

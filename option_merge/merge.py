@@ -176,9 +176,6 @@ class MergedOptions(dict, Mapping):
 
     def __contains__(self, path):
         """Ask storage if it has a path"""
-        if isinstance(path, (list, tuple)):
-            path = dot_joiner(path)
-
         try:
             self.storage.get(self.converted_path(path))
             return True
@@ -257,6 +254,7 @@ class MergedOptions(dict, Mapping):
     def keys(self):
         """Return a de-duplicated list of the keys we know about"""
         return self.storage.keys_after(self.prefix_string)
+    reversed_keys = keys
 
     def items(self):
         """Iterate over [(key, value), ...] pairs"""

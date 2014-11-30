@@ -1,7 +1,5 @@
 from option_merge.joiner import dot_joiner
 from option_merge.path import Path
-import fnmatch
-import six
 
 class NotFound(Exception): pass
 """Used to signify no value was found"""

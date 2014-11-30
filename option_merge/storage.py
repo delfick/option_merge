@@ -14,8 +14,6 @@ from option_merge.path import Path
 
 from delfick_error import ProgrammerError
 from namedlist import namedlist
-import types
-import six
 
 class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
     """

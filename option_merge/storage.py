@@ -48,7 +48,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 yield list(shortened_path)[0], data, list(shortened_path)[1:]
                 return
             else:
-                prefix = Path("", joined="")
+                prefix = ""
         else:
             if not dot_joiner(prefix).startswith(self.path.joined()):
                 raise hp.NotFound

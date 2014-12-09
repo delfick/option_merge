@@ -130,12 +130,12 @@ class Storage(object):
         sources = []
         if chain is None:
             chain = []
-        if path in chain:
+        if (path, self) in chain:
             return []
         if not path:
             return []
 
-        for info in self.get_info(path, chain + [path], ignore_converters=True):
+        for info in self.get_info(path, chain + [(path, self)], ignore_converters=True):
             source = info.source
             if callable(info.source):
                 source = info.source()
@@ -148,9 +148,15 @@ class Storage(object):
             else:
                 if source not in sources:
                     if source:
-                        sources.append(source)
+                        if isinstance(source, list):
+                            sources.extend(source)
+                        else:
+                            sources.append(source)
 
-        return sources
+        if len(sources) == 1:
+            return sources[0]
+        else:
+            return sources
 
     def delete(self, path):
         """Delete the first instance of some path"""
@@ -189,7 +195,7 @@ class Storage(object):
 
         for info_path, data, source in self.data:
             for full_path, found_path, val in self.determine_path_and_val(path, info_path, data, source):
-                source = self.make_source_for_function(data, found_path, chain, default=source)
+                source = self.make_source_for_function(val, found_path, chain, default=source)
                 path = Path.convert(path).ignoring_converters(ignore_converters)
                 yield DataPath(path.using(full_path), val, source)
                 yielded = True
@@ -230,9 +236,10 @@ class Storage(object):
         """Return us a function that will get the source for some path on the specified obj"""
         def source_for():
             if hasattr(obj, "source_for"):
-                return obj.source_for(path, chain)
-            else:
-                return default
+                nxt = obj.source_for(path, chain)
+                if nxt:
+                    return nxt
+            return default
         return source_for
 
     def keys_after(self, path, ignore_converters=False):

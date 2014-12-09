@@ -17,7 +17,7 @@ from option_merge.storage import Storage
 from option_merge import helper as hp
 from option_merge.path import Path
 
-from delfick_error import DelfickError, ProgrammerError
+from delfick_error import DelfickError
 from collections import Mapping
 import six
 
@@ -283,7 +283,7 @@ class MergedOptions(dict, Mapping):
         joined = None
         if hasattr(path, "joined"):
             path, joined = path, path.joined()
-        elif isinstance(path, basestring):
+        elif isinstance(path, six.string_types):
             path, joined = hp.prefixed_path_string(path, self.prefix_string)
         elif isinstance(path, (list, tuple)):
             path, joined = hp.prefixed_path_list(path, self.prefix_list)

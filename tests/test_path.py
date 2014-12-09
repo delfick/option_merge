@@ -57,10 +57,10 @@ describe TestCase, "Path":
 
 	describe "Special methods":
 		it "dot joins the path for __unicode__":
-			self.assertEqual(unicode(Path("a.b.c.d")), "a.b.c.d")
-			self.assertEqual(unicode(Path(["a.b", "c", "d"])), "a.b.c.d")
-			self.assertEqual(unicode(Path(["a", "b", "c", "d"])), "a.b.c.d")
-			self.assertEqual(unicode(Path([["a", "b"], "c", "d"])), "ab.c.d")
+			self.assertEqual(str(Path("a.b.c.d")), "a.b.c.d")
+			self.assertEqual(str(Path(["a.b", "c", "d"])), "a.b.c.d")
+			self.assertEqual(str(Path(["a", "b", "c", "d"])), "a.b.c.d")
+			self.assertEqual(str(Path([["a", "b"], "c", "d"])), "ab.c.d")
 
 		it "returns boolean status of path for __nonzero__":
 			assert Path("asdf")
@@ -78,7 +78,7 @@ describe TestCase, "Path":
 			self.assertEqual(list(Path("")), [])
 			self.assertEqual(list(Path(["a.b", "c", "d"])), ["a.b", "c", "d"])
 
-		it "includes unicode of Path for repr":
+		it "includes str of Path for repr":
 			self.assertEqual(repr(Path("asdf.asdf.1")), "<Path(asdf.asdf.1)>")
 			self.assertEqual(repr(Path(["asdf", "asdf", "1"])), "<Path(asdf.asdf.1)>")
 

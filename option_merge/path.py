@@ -63,7 +63,7 @@ class Path(object):
                 yield part
 
     def __repr__(self):
-        return "<Path({0})>".format(unicode(self))
+        return "<Path({0})>".format(str(self))
 
     def __eq__(self, other):
         return dot_joiner(other) == self.joined()
@@ -102,7 +102,7 @@ class Path(object):
                         res.append(part)
                         continue
 
-                    if base.startswith(unicode(dot_joiner(part))):
+                    if base.startswith(str(dot_joiner(part))):
                         base = base[len(dot_joiner(part)):]
                         while base.startswith('.'):
                             base = base[1:]

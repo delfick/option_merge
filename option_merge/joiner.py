@@ -23,7 +23,7 @@ def dot_joiner_path(lst):
         return lst
 
     if not type(lst) in (list, tuple):
-        return unicode(lst)
+        return str(lst)
 
     for part in lst:
         if hasattr(part, "joined"):
@@ -41,7 +41,7 @@ def dot_joiner_path(lst):
         if part:
             result.append(part)
 
-    return '.'.join(unicode(res) for res in result)
+    return '.'.join(str(res) for res in result)
 
 def join(one, two):
     """

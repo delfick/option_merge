@@ -18,7 +18,7 @@ def value_at(data, path, called_from=None, chain=None):
     if hasattr(data, "reversed_keys"):
         keys = list(data.reversed_keys())
     else:
-        keys = list(reversed(sorted(data.keys(), key=lambda d: len(unicode(d)))))
+        keys = list(reversed(sorted(data.keys(), key=lambda d: len(str(d)))))
 
     from option_merge.merge import MergedOptions
     if path in keys:

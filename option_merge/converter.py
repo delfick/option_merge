@@ -41,6 +41,7 @@ class Converters(object):
     Also memoizes the results of conversion.
     """
     def __init__(self):
+        self._waiting = {}
         self._converted = {}
         self._converters = []
         self.activated = False
@@ -77,7 +78,17 @@ class Converters(object):
         """
         return self._converted[path]
 
+    def waiting(self, path):
+        """Return whether we're waiting for this path"""
+        return path in self._waiting
+
     def done(self, path, value):
         """Mark a path as been replaced by the specified value"""
+        if path in self._waiting:
+            del self._waiting[path]
         self._converted[path] = value
+
+    def started(self, path):
+        """Mark this path as waiting"""
+        self._waiting[path] = True
 

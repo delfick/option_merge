@@ -188,6 +188,10 @@ class Path(object):
         """Return the converted value for this path"""
         return self.converters.converted_val(self)
 
+    def waiting(self):
+        """Return whether we're waiting for this value"""
+        return self.converters.waiting(self)
+
     def joined(self):
         """Return the dot_join of of the path"""
         if self._joined is None:

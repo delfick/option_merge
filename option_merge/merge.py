@@ -217,7 +217,7 @@ class MergedOptions(dict, Mapping):
     def values_for(self, path, converters=None, ignore_converters=False):
         """Get all known values for some path"""
         path = self.converted_path(path, converters=converters, ignore_converters=ignore_converters or getattr(path, "ignore_converters", False))
-        if not path.ignore_converters:
+        if not path.ignore_converters and not path.waiting():
             if path.converted():
                 yield path.converted_val(), True
                 return

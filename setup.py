@@ -9,6 +9,7 @@ setup(
     , install_requires =
       [ 'six'
       , 'delfick_error>=1.6'
+      , 'namedlist'
       ]
 
     , extras_require =

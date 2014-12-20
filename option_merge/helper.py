@@ -1,7 +1,10 @@
+from option_merge.joiner import dot_joiner
+from option_merge.path import Path
+
 class NotFound(Exception): pass
 """Used to signify no value was found"""
 
-def value_at(data, path, chain=None):
+def value_at(data, path, called_from=None, chain=None):
     """Return the value at this path"""
     if not chain:
         chain = []
@@ -12,15 +15,40 @@ def value_at(data, path, chain=None):
     elif path and not isinstance(data, dict):
         raise NotFound
 
-    keys = list(reversed(sorted(data.keys())))
+    if hasattr(data, "reversed_keys"):
+        keys = list(data.reversed_keys())
+    else:
+        keys = list(reversed(sorted(data.keys(), key=lambda d: len(str(d)))))
 
+    from option_merge.merge import MergedOptions
     if path in keys:
-        return chain + [path], data[path]
+        if isinstance(path, Path) and isinstance(data, MergedOptions):
+            da = data.get(path.path, ignore_converters=getattr(path, "ignore_converters", False))
+        else:
+            da = data[path]
+
+        if not chain:
+            return path, da
+        else:
+            return chain + [path], da
 
     for key in keys:
         if path.startswith("{0}.".format(key)):
             try:
-                return value_at(data[key], path[len(key)+1:], chain=chain + [key])
+                prefix = Path.convert(without_prefix(path, key)).ignoring_converters(getattr(path, "ignore_converters", False))
+
+                key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
+
+                if isinstance(data, MergedOptions):
+                    nxt = data.get(key.path, ignore_converters=getattr(key, "ignore_converters", False))
+                else:
+                    nxt = data[key.path]
+
+                storage = getattr(nxt, "storage", None)
+                if storage and called_from is storage:
+                    raise NotFound
+
+                return value_at(nxt, prefix, called_from, chain=chain+[key.path])
             except NotFound:
                 pass
 
@@ -31,11 +59,15 @@ def without_prefix(path, prefix=""):
     Remove the prefix from a path
 
     If the prefix isn't on this path, just return the path itself
-
-    If the path is the prefix, return the prefix
     """
-    if not prefix or not path or prefix == path:
+    if hasattr(path, 'without'):
+        return path.without(prefix)
+
+    if not prefix or not path:
         return path
+
+    if prefix == path:
+        return ""
 
     if path.startswith("{0}.".format(prefix)):
         return path[len(prefix)+1:]
@@ -44,13 +76,18 @@ def without_prefix(path, prefix=""):
 
 def prefixed_path_list(path, prefix=None):
     """Return the prefixed version of this path as a list"""
-    if not prefix:
-        return path
-
-    if prefix is None:
-        prefix = []
-
-    return prefix + path
+    from option_merge.path import Path
+    if isinstance(path, Path):
+        if prefix:
+            res = path.prefixed(prefix)
+        else:
+            res = path.clone()
+    else:
+        if prefix:
+            res = prefix + path
+        else:
+            res = list(path)
+    return res, dot_joiner(res)
 
 def prefixed_path_string(path, prefix=""):
     """Return the prefixed version of this string"""
@@ -66,27 +103,13 @@ def prefixed_path_string(path, prefix=""):
     while prefix and prefix.endswith("."):
         prefix = prefix[:-1]
 
-    result = []
-    if prefix:
-        result.append(prefix)
-    if path:
-        result.append(path)
-    return '.'.join(result)
-
-def dot_joiner(lst):
-    """Join list of strings with a single dot in between each"""
-    result = []
-    for part in lst:
-        while part and part.startswith("."):
-            part = part[1:]
-
-        while part and part.endswith("."):
-            part = part[:-1]
-
-        if part:
-            result.append(part)
-
-    return '.'.join(result)
+    if not prefix:
+        return path, path
+    elif not path:
+        return prefix, prefix
+    else:
+        res = "{0}.{1}".format(prefix, path)
+        return res, res
 
 def make_dict(first, rest, data):
     """Make a dictionary from a list of keys"""

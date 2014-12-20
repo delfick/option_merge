@@ -253,6 +253,10 @@ class MergedOptions(dict, Mapping):
             , ignore_converters=self.ignore_converters
             )
 
+    def wrapped(self):
+        """Return a MergedOptions with this inside"""
+        return self.__class__.using(self, converters=self.converters, dont_prefix=self.dont_prefix)
+
     def keys(self, ignore_converters=False):
         """Return a de-duplicated list of the keys we know about"""
         return self.storage.keys_after(self.prefix_string, ignore_converters=ignore_converters)

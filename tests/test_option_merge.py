@@ -127,7 +127,6 @@ describe TestCase, "MergedOptions":
 
             self.assertIs(merge["a"], other)
             convert.assert_called_once_with("a", d1)
-
             self.assertIs(merge["a"], other)
             self.assertEqual(len(convert.mock_calls), 1)
 
@@ -153,6 +152,70 @@ describe TestCase, "MergedOptions":
             with mock.patch.object(self.merged, 'values_for', fake_values_for):
                 self.assertIs(self.merged.get('blah'), val1)
             fake_values_for.assert_called_once_with('blah', ignore_converters=False)
+
+        it "works if we get one subtree from a different subtree":
+            val1 = mock.Mock(name="val1")
+            val2 = mock.Mock(name="val2")
+            options = MergedOptions.using({"one": {"two": val1}}, {"one": {"three": val2}})
+            self.assertEqual(sorted(options["one"].keys()), ["three", "two"])
+            self.assertIs(options["one"]["two"], val1)
+            self.assertIs(options["one"]["three"], val2)
+
+        it "works if we get one subtree from a different subtree if subtrees are MergedOptions":
+            val1 = mock.Mock(name="val1")
+            val2 = mock.Mock(name="val2")
+            options = MergedOptions.using({"one": MergedOptions.using({"two": val1})}, {"one": MergedOptions.using({"three": val2})})
+            self.assertEqual(sorted(options["one"].keys()), ["three", "two"])
+            self.assertIs(options["one"]["two"], val1)
+            self.assertIs(options["one"]["three"], val2)
+
+        it "can get items from inside a converter":
+            thing = MergedOptions.using({"opts": MergedOptions.using({"blah": 1, "stuff": 2, "things": [1, 2]})})
+            converted_val = {}
+            def converter(path, val):
+                thing.converters.done(path, converted_val)
+                items = dict(val.items())
+                self.assertEqual(items, {"blah": 1, "stuff": 2, "things": [1, 2]})
+                converted_val.update(items)
+                return converted_val
+
+            thing.add_converter(Converter(convert=converter, convert_path=["opts"]))
+            thing.converters.activate()
+            self.assertIs(thing["opts"], converted_val)
+
+        it "can get items from inside a converter after a level of indirection":
+            final = MergedOptions()
+
+            thing = MergedOptions.using({"blah": 1, "stuff": 2, "things": [1, 2]}, converters=final.converters)
+            other = MergedOptions.using({"tree": 5, "pole": 6}, converters=final.converters)
+
+            final.update({"seven": 7, "eight": 8, "images": {"thing": thing, "other": other}})
+            final.update({"two": 2, "three": 3})
+            final.update({"images": {"other": {"stuff": 7}}})
+
+            converted_val = {}
+            def converter(path, val):
+                final.converters.done(path, converted_val)
+                items = dict(val.items(ignore_converters=True))
+                if path == "images.other":
+                    self.assertEqual(items, {"tree": 5, "pole": 6, "stuff": 7})
+                else:
+                    self.assertEqual(items, {"blah": 1, "stuff": 2, "things": [1, 2]})
+
+                converted_val.update(items)
+
+                everything = MergedOptions.using(path.configuration.root(), converters=final.converters)
+                if path == "images.other":
+                    assert isinstance(everything["images.thing"], dict)
+                else:
+                    assert isinstance(everything["images.other"], dict)
+
+                return converted_val
+
+            final.add_converter(Converter(convert=converter, convert_path=["images", "other"]))
+            final.add_converter(Converter(convert=converter, convert_path=["images", "thing"]))
+            final.converters.activate()
+            self.assertIs(final["images.thing"], converted_val)
 
     describe "Setting an item":
         it "adds to data":
@@ -346,7 +409,7 @@ describe TestCase, "Converters":
     it "has a Attributes converter on MergedOptions":
         obj = type("obj", (object, ), {"one": "two", "two": "three", "four": "five"})
         result = MergedOptions.Attributes(obj, ("one", "four"), lift="global")
-        self.assertEqual(dict(result.items()), {"global": result.prefixed("global")})
+        self.assertEqual(list(result.keys()), ["global"])
         self.assertEqual(dict(result["global"].items()), {"one": "two", "four": "five"})
 
     describe "Property Converter":
@@ -475,6 +538,6 @@ describe TestCase, "Converters":
 
             converted = AttributesConverter(Obj(), ("one", "hi", "__class__"), lift=["cats", "pandas"]).convert()
             self.assertEqual(dict(converted.items()), {"cats": converted.prefixed("cats")})
-            self.assertEqual(dict(converted["cats"].items()), {"pandas": converted["cats"].prefixed("pandas")})
+            self.assertEqual(list(converted["cats"].keys()), ["pandas"])
             self.assertEqual(dict(converted["cats"]["pandas"].items()), {"one": "two", "hi": "hello", "__class__": Obj})
 

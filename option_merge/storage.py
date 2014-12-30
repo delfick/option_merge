@@ -13,6 +13,7 @@ from option_merge import helper as hp
 from option_merge.path import Path
 
 from delfick_error import ProgrammerError
+from collections import defaultdict
 from namedlist import namedlist
 
 class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
@@ -277,3 +278,49 @@ class Storage(object):
             if path.startswith("{0}.".format(key)):
                 if self.delete_from_data(data[key], Path.convert(path).without(key)):
                     return True
+
+    def as_dict(self, path, seen=None, ignore=None):
+        """Return this path as a single dictionary"""
+        result = {}
+        if seen is None:
+            seen = defaultdict(list)
+
+        if self in seen[path]:
+            return {}
+        seen[path].append(self)
+
+        for i in range(len(self.data)-1, -1, -1):
+            prefix, data, _ = self.data[i]
+
+            try:
+                path_without_prefix = path.without(prefix)
+            except hp.NotFound:
+                continue
+
+            val = data
+            used = None
+            found = False
+            while not found or path_without_prefix:
+                if hasattr(data, "as_dict"):
+                    val = val.as_dict(path_without_prefix, seen=seen, ignore=ignore)
+                    path_without_prefix = Path([])
+
+                try:
+                    used, val = hp.value_at(val, path_without_prefix, self)
+                    found = True
+                except hp.NotFound:
+                    found = False
+                    break
+
+                path_without_prefix = path_without_prefix.without(dot_joiner(used))
+
+            if found and path_without_prefix == "":
+                if not isinstance(val, dict):
+                    result = val
+                else:
+                    if not isinstance(result, dict):
+                        result = {}
+                    hp.merge_into_dict(result, val, seen, ignore=ignore)
+
+        return result
+

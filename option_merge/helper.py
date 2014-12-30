@@ -124,3 +124,21 @@ def make_dict(first, rest, data):
 
     return result
 
+def merge_into_dict(target, source, seen=None, ignore=None):
+    """Merge source into target"""
+    if ignore is None:
+        ignore = []
+
+    if hasattr(source, "as_dict"):
+        source = source.as_dict(seen=seen, ignore=ignore)
+
+    for key, val in source.items():
+        if key in ignore:
+            continue
+
+        if isinstance(val, dict):
+            if not isinstance(target.get(key), dict):
+                target[key] = {}
+            merge_into_dict(target[key], val, seen=seen)
+        else:
+            target[key] = val

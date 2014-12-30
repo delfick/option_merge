@@ -301,3 +301,7 @@ class MergedOptions(dict, Mapping):
         if converter not in self.converters:
             self.converters.append(converter)
 
+    def as_dict(self, key="", ignore_converters=True, seen=None, ignore=None):
+        """Return this key as a single dictionary"""
+        return self.storage.as_dict(self.converted_path(key, ignore_converters=ignore_converters), seen=seen, ignore=ignore)
+

@@ -2,6 +2,7 @@
 
 from option_merge.converter import Converter, Converters
 from option_merge.storage import Storage, DataPath
+from option_merge.merge import MergedOptions
 from option_merge.helper import NotFound
 from option_merge.path import Path
 
@@ -380,6 +381,57 @@ describe TestCase, "Storage":
             self.storage.add(Path(["1", "2", "3"]), {"a": 1, "b": 2})
             self.storage.add(Path(["1"]), d1)
             self.assertEqual(sorted(self.storage.keys_after("1")), sorted([]))
+
+    describe "as_dict":
+        it "Returns the dictionary if there is only one":
+            self.storage.add(Path([]), {"a": 1, "b": 2})
+            self.assertEqual(self.storage.as_dict(Path([])), {"a": 1, "b": 2})
+
+        it "merges from the back to the front if there is multiple dictionaries":
+            self.storage.add(Path([]), {"a": 1, "b": 2})
+            self.storage.add(Path([]), {"a": 2, "c": 3})
+            self.assertEqual(self.storage.as_dict(Path([])), {"a": 2, "b": 2, "c": 3})
+
+        it "returns the subpath that is provided":
+            self.storage.add(Path([]), {"a": {"d": 1}, "b": 2})
+            self.storage.add(Path([]), {"a": {"d": 3}, "c": 3})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3})
+
+        it "returns subpath if the data is in storage with a prefix":
+            self.storage.add(Path([]), {"a": {"d": 1}, "b": 2})
+            self.storage.add(Path(["a"]), {"d": 3})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3})
+
+        it "unrolls MergedOptions it finds":
+            options = MergedOptions.using({"f": 5})
+            self.storage.add(Path([]), {"a": {"d": 1}, "b": 2})
+            self.storage.add(Path(["a"]), {"d": 3, "e": options})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"f": 5}})
+
+        it "ignores unrelated dataz":
+            options = MergedOptions.using({"f": 5})
+            self.storage.add(Path([]), {"g": {"d": 1}, "b": 2})
+            self.storage.add(Path(["a"]), {"d": 3, "e": options})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"f": 5}})
+
+        it "doesn't infinitely recurse":
+            self.storage.add(Path([]), {"a": {"d": 1}, "b": MergedOptions(storage=self.storage)})
+            self.storage.add(Path(["a"]), {"d": 3, "e": MergedOptions(storage=self.storage)})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"a": {"d": 1}, "b": {}}})
+
+        it "allows different parts of the same storage":
+            self.storage.add(Path([]), {"a": {"d": 1}, "b": 2})
+            self.storage.add(Path(["a"]), {"d": 3, "e": MergedOptions(storage=self.storage)})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"a": {"d": 1}, "b": 2}})
+
+        it "works if the first item is a MergedOptions":
+            options = MergedOptions.using({"blah": {"stuff": 1}})
+            options.update({"blah": {"stuff": 4, "meh": {"8": "9"}}})
+            options["blah"].update({"stuff": {"tree": 20}})
+            self.storage.add(Path([]), options)
+
+            self.assertEqual(self.storage.as_dict(Path(["blah", "stuff"])), {"tree": 20})
+            self.assertEqual(self.storage.as_dict(Path(["blah", "meh"])), {"8": "9"})
 
 describe TestCase, "DataPath":
     it "takes in path, data and source":

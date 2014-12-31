@@ -284,6 +284,12 @@ class MergedOptions(dict, Mapping):
 
     def converted_path(self, path, ignore_converters=False, converters=None):
         """Convert a path into a Path object with a prefixed path"""
+        if converters is None:
+            converters = self.converters
+
+        if isinstance(path, Path) and path.ignore_converters is ignore_converters and path.converters is converters:
+            return path
+
         joined = None
         if hasattr(path, "joined"):
             path, joined = path, path.joined()
@@ -291,9 +297,6 @@ class MergedOptions(dict, Mapping):
             path, joined = hp.prefixed_path_string(path, self.prefix_string)
         elif isinstance(path, (list, tuple)):
             path, joined = hp.prefixed_path_list(path, self.prefix_list)
-
-        if converters is None:
-            converters = self.converters
         return Path.convert(path, self, converters=converters, joined=joined).ignoring_converters(ignore_converters)
 
     def add_converter(self, converter):

@@ -134,6 +134,9 @@ class Path(object):
         if converters is None:
             converters = self.converters
 
+        if path == self.path and self.configuration is configuration and self.converters is converters and self.ignore_converters is ignore_converters:
+            return self
+
         if joined is None:
             if hasattr(path, "joined"):
                 joined = path.joined()
@@ -143,10 +146,12 @@ class Path(object):
 
     def clone(self):
         """Return a clone of this path with all the same values"""
-        return self.using(self.path, self.configuration, self.converters, self.ignore_converters, joined=self.joined())
+        return self.using(self.path, self.configuration, self.converters, self.ignore_converters)
 
     def ignoring_converters(self, ignore_converters=True):
         """Return a clone of this path with ignore_converters set to True"""
+        if self.ignore_converters == ignore_converters:
+            return self
         return self.using(self.path, ignore_converters=ignore_converters, joined=self.joined())
 
     def do_conversion(self, value):

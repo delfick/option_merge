@@ -26,34 +26,14 @@ describe TestCase, "Path":
 		self.assertIs(path_obj.ignore_converters, ignore_converters)
 
 	describe "Convert factory method":
-		it "returns a clone of the path if already a Path object":
+		it "returns the same object if already a Path object":
 			path = mock.Mock(name="path")
 			converters = mock.Mock(name="converters")
 			configuration = mock.Mock(name="configuration")
 			ignore_converters = mock.Mock(name="ignore_converters")
 			path_obj = Path(path, configuration, converters, ignore_converters)
 			converted = Path.convert(path_obj)
-
-			assert converted is not path_obj
-			self.assertEqual(converted.path, path)
-			self.assertIs(converted.converters, converters)
-			self.assertIs(converted.configuration, configuration)
-			self.assertIs(converted.ignore_converters, ignore_converters)
-
-		it "returns a Path object with provided values":
-			path = mock.Mock(name="path")
-
-			converters = mock.Mock(name="converters")
-			configuration = mock.Mock(name="configuration")
-			ignore_converters = mock.Mock(name="ignore_converters")
-
-			p = Path(path, configuration=configuration, converters=converters, ignore_converters=ignore_converters)
-			converted = Path.convert(p, configuration, converters, ignore_converters)
-
-			self.assertEqual(converted.path, path)
-			self.assertIs(converted.converters, converters)
-			self.assertIs(converted.configuration, configuration)
-			self.assertIs(converted.ignore_converters, ignore_converters)
+			assert converted is path_obj
 
 	describe "Special methods":
 		it "dot joins the path for __unicode__":
@@ -227,7 +207,7 @@ describe TestCase, "Path":
 			self.assertIs(new_path.ignore_converters, ignore_converters2)
 
 	describe "Clone":
-		it "returns the same class with all the same values":
+		it "just returns itself":
 			p1 = mock.Mock(name="p1")
 			conf = mock.Mock(name="conf")
 			converters = mock.Mock(name="converters")
@@ -235,12 +215,7 @@ describe TestCase, "Path":
 
 			path = Path(p1, conf, converters, ignore_converters=ignore_converters)
 			new_path = path.clone()
-
-			assert new_path is not path
-			self.assertIs(new_path.path, p1)
-			self.assertIs(new_path.configuration, conf)
-			self.assertIs(new_path.converters, converters)
-			self.assertIs(new_path.ignore_converters, ignore_converters)
+			assert new_path is path
 
 	describe "ignoring_converters":
 		it "returns a clone with the same path and ignore_converters default to True":

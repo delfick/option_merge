@@ -292,8 +292,20 @@ class Storage(object):
         for i in range(len(self.data)-1, -1, -1):
             prefix, data, _ = self.data[i]
 
+            if prefix:
+                prefix = list(prefix[:])
+                while prefix:
+                    data = {prefix.pop(): data}
+                if path:
+                    prefix, data = data.items()[0]
+                else:
+                    prefix = data.keys()[0]
+
             try:
-                path_without_prefix = path.without(prefix)
+                if path:
+                    path_without_prefix = path.without(prefix)
+                else:
+                    path_without_prefix = path
             except hp.NotFound:
                 continue
 

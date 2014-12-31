@@ -347,7 +347,7 @@ describe TestCase, "MergedOptions":
                 self.merged.update({'a':1, 'b':{'c':9}})
                 self.merged.update({'a':{'c':4}, 'b':4})
                 self.merged['a'] = {'c':5, "d":8}
-                self.merged['a']["c"] = {'c':5, "d":8}
+                self.merged['a']["c"] = {'c':5, "d":9}
                 self.assertEqual(sorted(self.merged.keys()), sorted(["a", "b"]))
 
             it "returns empty if there are no keys":

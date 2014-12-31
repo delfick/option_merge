@@ -80,6 +80,12 @@ class Path(object):
     def __hash__(self):
         return hash(self.joined())
 
+    def __getitem__(self, key):
+        path = self.path
+        if isinstance(path, six.string_types):
+            path = [path]
+        return path[key]
+
     def without(self, base):
         """Return a clone of this path without the base"""
         base = dot_joiner(base)

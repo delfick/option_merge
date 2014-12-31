@@ -417,12 +417,12 @@ describe TestCase, "Storage":
         it "doesn't infinitely recurse":
             self.storage.add(Path([]), {"a": {"d": 1}, "b": MergedOptions(storage=self.storage)})
             self.storage.add(Path(["a"]), {"d": 3, "e": MergedOptions(storage=self.storage)})
-            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"a": {"d": 1}, "b": {}}})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"a": {"e": {}, "d": 3}, "b": {}}})
 
         it "allows different parts of the same storage":
             self.storage.add(Path([]), {"a": {"d": 1}, "b": 2})
             self.storage.add(Path(["a"]), {"d": 3, "e": MergedOptions(storage=self.storage)})
-            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"a": {"d": 1}, "b": 2}})
+            self.assertEqual(self.storage.as_dict(Path(["a"])), {"d": 3, "e": {"a": {"e": {}, "d":3}, "b": 2}})
 
         it "works if the first item is a MergedOptions":
             options = MergedOptions.using({"blah": {"stuff": 1}})
@@ -432,6 +432,11 @@ describe TestCase, "Storage":
 
             self.assertEqual(self.storage.as_dict(Path(["blah", "stuff"])), {"tree": 20})
             self.assertEqual(self.storage.as_dict(Path(["blah", "meh"])), {"8": "9"})
+
+        it "works if the data is prefixed":
+            options = MergedOptions()
+            options[["blah", "stuff"]] = 1
+            self.assertEqual(options.as_dict(), {"blah": {"stuff": 1}})
 
 describe TestCase, "DataPath":
     it "takes in path, data and source":

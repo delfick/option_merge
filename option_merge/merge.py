@@ -196,7 +196,9 @@ class MergedOptions(dict, Mapping):
 
     def __setitem__(self, path, value):
         """Set a key in the storage"""
-        self.storage.add(self.converted_path([path]), value)
+        if isinstance(path, six.string_types):
+            path = [path]
+        self.storage.add(self.converted_path(path), value)
 
     def __delitem__(self, path):
         """Delete a key from the storage"""

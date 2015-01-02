@@ -297,9 +297,9 @@ class Storage(object):
                 while prefix:
                     data = {prefix.pop(): data}
                 if path:
-                    prefix, data = data.items()[0]
+                    prefix, data = list(data.items())[0]
                 else:
-                    prefix = data.keys()[0]
+                    prefix = list(data.keys())[0]
 
             try:
                 if path:

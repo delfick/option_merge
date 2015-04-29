@@ -175,6 +175,8 @@ class Path(object):
         else:
             converted = converter(self, value)
             self.converters.done(self, converted)
+            if hasattr(converted, "post_setup"):
+                converted.post_setup()
             return converted, True
 
     def find_converter(self):

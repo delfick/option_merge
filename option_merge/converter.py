@@ -9,6 +9,8 @@ group together multiple converters.
 
 from option_merge.joiner import dot_joiner
 
+import fnmatch
+
 class Converter(object):
     """
     Encapsulates a single converter.
@@ -30,7 +32,7 @@ class Converter(object):
     def matches(self, path):
         """Check to see if this converter should be used against this path"""
         cp = self.convert_path
-        return cp and dot_joiner(path) == dot_joiner(cp)
+        return cp and fnmatch.fnmatch(dot_joiner(path), dot_joiner(cp))
 
 class Converters(object):
     """

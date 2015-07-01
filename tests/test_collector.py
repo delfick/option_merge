@@ -199,10 +199,13 @@ describe TestCase, "Collector":
             configuration = MergedOptions.using({})
 
             with self.fake_config() as (config_root, config_file):
+                another_loc = os.path.join(config_root, 'another.json')
+                with open(another_loc, "w") as fle: fle.write("{}")
+
                 other_loc = os.path.join(config_root, 'other.json')
-                with open(other_loc, "w") as fle:
-                    fle.write("{}")
-                results = {config_file: {"extra": other_loc}, other_loc: {"stuff": "a"}}
+                with open(other_loc, "w") as fle: fle.write("{}")
+
+                results = {config_file: {"extra": other_loc}, other_loc: {"nested": another_loc}, another_loc: {"stuff": "a"}}
 
                 class Col(Collector):
                     def start_configuration(slf):
@@ -217,19 +220,24 @@ describe TestCase, "Collector":
                         self.assertEqual(config["config_root"], config_root)
                         if "extra" in result:
                             collect_another_source(result["extra"])
+                        if "nested" in result:
+                            collect_another_source(result["nested"], prefix=["once", "twice"])
                         called.append((3, config, result, src))
 
                     def extra_configuration_collection(slf, config):
-                        self.assertEqual([c[0] for c in called], [1, 2, 2, 3, 3])
+                        self.assertEqual([c[0] for c in called], [1, 2, 2, 2, 3, 3, 3])
                         called.append((4, config))
 
                 collector = Col(config_file)
                 self.assertIs(collector.configuration, configuration)
+                print(called)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
                       , (2, other_loc)
-                      , (3, configuration, {"stuff": "a"}, other_loc)
+                      , (2, another_loc)
+                      , (3, configuration, {"once": {"twice": {"stuff": "a"}}}, another_loc)
+                      , (3, configuration, {"nested": another_loc}, other_loc)
                       , (3, configuration, {"extra": other_loc}, config_file)
                       , (4, configuration)
                       ]

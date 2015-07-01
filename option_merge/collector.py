@@ -106,7 +106,7 @@ class Collector(object):
             sources.insert(0, home_dir_configuration)
 
         done = set()
-        def add_configuration(src):
+        def add_configuration(src, prefix=None):
             log.info("Adding configuration from %s", os.path.abspath(src))
             if os.path.abspath(src) in done:
                 return
@@ -127,6 +127,10 @@ class Collector(object):
 
             if not result:
                 return
+
+            while prefix:
+                part = prefix.pop()
+                result = {part: result}
 
             self.add_configuration(configuration, add_configuration, done, result, src)
 

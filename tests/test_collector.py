@@ -221,7 +221,7 @@ describe TestCase, "Collector":
                         if "extra" in result:
                             collect_another_source(result["extra"])
                         if "nested" in result:
-                            collect_another_source(result["nested"], prefix=["once", "twice"])
+                            collect_another_source(result["nested"], prefix=["once", "twice"], extra={"a": "b"})
                         called.append((3, config, result, src))
 
                     def extra_configuration_collection(slf, config):
@@ -236,7 +236,7 @@ describe TestCase, "Collector":
                       , (2, config_file)
                       , (2, other_loc)
                       , (2, another_loc)
-                      , (3, configuration, {"once": {"twice": {"stuff": "a"}}}, another_loc)
+                      , (3, configuration, {"once": {"twice": {"stuff": "a", "a": "b"}}}, another_loc)
                       , (3, configuration, {"nested": another_loc}, other_loc)
                       , (3, configuration, {"extra": other_loc}, config_file)
                       , (4, configuration)

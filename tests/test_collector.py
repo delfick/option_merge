@@ -18,31 +18,17 @@ class TestCase(unittest.TestCase, DelfickErrorTestMixin): pass
 
 describe TestCase, "Collector":
     @contextmanager
-    def fake_config(self):
+    def fake_config(self, body="\n{}"):
         root = None
         try:
             root = tempfile.mkdtemp()
             config_file = os.path.join(root, "config.json")
             with open(config_file, 'w') as fle:
-                fle.write("\n{}")
+                fle.write(body)
             yield (root, config_file)
         finally:
             if root and os.path.exists(root):
                 shutil.rmtree(root)
-
-    it "takes in configuration_file, determines configuration_folder and collects configuration":
-        with self.fake_config() as (config_root, config_file):
-            configuration = mock.Mock(name="configuration")
-            fake_collect_configuration = mock.Mock(name="collect_configuration")
-            fake_collect_configuration.return_value = configuration
-
-            with mock.patch.object(Collector, 'collect_configuration', fake_collect_configuration):
-                collector = Collector(config_file)
-                self.assertEqual(collector.configuration_file, config_file)
-                self.assertEqual(collector.configuration_folder, config_root)
-                self.assertIs(collector.configuration, configuration)
-
-            fake_collect_configuration.assert_called_once_with(config_file)
 
     describe "Cloning":
         it "returns an instance that has rerun collect_configuration and prepare":
@@ -56,31 +42,31 @@ describe TestCase, "Collector":
 
                     def alter_clone_cli_args(slf, nw_cllctr, nw_cli_args, new_args):
                         nw_cli_args.update(new_args)
-                        called.append((2, nw_cllctr, nw_cli_args))
+                        called.append((1, nw_cllctr, nw_cli_args))
 
-
-                collector = Col(config_file)
-                collector.prepare(original_cli_args)
+                collector = Col()
+                collector.prepare(config_file, original_cli_args)
                 self.assertEqual(collector.configuration["cli_args"].as_dict(), original_cli_args)
 
             class MockCollectorKls(Col):
-                def __init__(self, config_file):
-                    called.append((1, config_file))
-
-                def prepare(slf, new_cli_args):
-                    called.append((3, new_cli_args))
+                def prepare(slf, config_file, new_cli_args):
+                    called.append((2, (config_file, new_cli_args)))
 
             collector.__class__ = MockCollectorKls
 
             clone = collector.clone({"c": 3, "b": 4})
             self.assertIs(type(clone), MockCollectorKls)
-            self.assertEqual(called, [(1, config_file), (2, clone, {"a": 1, "b": 4, "c": 3}), (3, {"a": 1, "b": 4, "c": 3})])
+            self.assertEqual(called, [
+                    (1, clone, {"a": 1, "b": 4, "c": 3})
+                  , (2, (config_file, {"a": 1, "b": 4, "c": 3}))
+                  ]
+                )
             self.assertEqual(original_cli_args, {"a": 1, "b": 2})
 
     describe "prepare":
         it "find_missing_config, updates configuration, does extra_prepare, activates converters and extra_prepare_after_activation":
             called = []
-            with self.fake_config() as (config_root, config_file):
+            with self.fake_config('{"one": 1}') as (config_root, config_file):
                 class Col(Collector):
                     def start_configuration(self): return MergedOptions.using({})
                     def read_file(self, location): return json.load(open(location))
@@ -88,7 +74,7 @@ describe TestCase, "Collector":
 
                     def find_missing_config(slf, config):
                         called.append((1, config))
-                        self.assertEqual(config.as_dict(), {"config_root": config_root})
+                        self.assertEqual(config.as_dict(), {"config_root": config_root, "one": 1})
                         config.converters = mock.Mock(name="converters")
 
                     def extra_prepare(slf, config, cli_args, available_tasks):
@@ -98,6 +84,7 @@ describe TestCase, "Collector":
                               , "collector": slf
                               , "cli_args": cli_args
                               , "config_root": config_root
+                              , "one": 1
                               }
                             )
                         self.assertEqual(len(config.converters.mock_calls), 0)
@@ -106,11 +93,11 @@ describe TestCase, "Collector":
                         called.append((3, config, cli_args))
                         config.converters.activate.assert_called_once()
 
-                collector = Col(config_file)
+                collector = Col()
                 self.assertEqual(called, [])
 
                 cli_args = mock.Mock(name="cli_args")
-                collector.prepare(cli_args)
+                collector.prepare(config_file, cli_args)
                 self.assertEqual(called, [(1, collector.configuration), (2, collector.configuration, cli_args), (3, collector.configuration, cli_args)])
 
     describe "Collecting configuration":
@@ -118,8 +105,8 @@ describe TestCase, "Collector":
             called = []
             configuration = MergedOptions.using({})
 
-            result_home_dir = mock.Mock(name="result_home_dir")
-            result_config_file = mock.Mock(name="result_config_file")
+            result_home_dir = mock.MagicMock(name="result_home_dir")
+            result_config_file = mock.MagicMock(name="result_config_file")
 
             with self.fake_config() as (config_root, config_file):
                 home_dir = os.path.join(config_root, 'home.json')
@@ -137,7 +124,6 @@ describe TestCase, "Collector":
                         return results[location]
 
                     def add_configuration(slf, config, collect_another_source, done, result, src):
-                        self.assertEqual(config["config_root"], config_root)
                         called.append((3, config, result, src))
 
                     def home_dir_configuration_location(slf): return home_dir
@@ -146,8 +132,8 @@ describe TestCase, "Collector":
                         self.assertEqual([c[0] for c in called], [1, 2, 3, 2, 3])
                         called.append((4, config))
 
-                collector = Col(config_file)
-                self.assertIs(collector.configuration, configuration)
+                collector = Col()
+                collector.collect_configuration(config_file)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, home_dir)
@@ -162,7 +148,7 @@ describe TestCase, "Collector":
             called = []
             configuration = MergedOptions.using({})
 
-            result_config_file = mock.Mock(name="result_config_file")
+            result_config_file = mock.MagicMock(name="result_config_file")
 
             with self.fake_config() as (config_root, config_file):
                 results = {config_file: result_config_file}
@@ -177,15 +163,14 @@ describe TestCase, "Collector":
                         return results[location]
 
                     def add_configuration(slf, config, collect_another_source, done, result, src):
-                        self.assertEqual(config["config_root"], config_root)
                         called.append((3, config, result, src))
 
                     def extra_configuration_collection(slf, config):
                         self.assertEqual([c[0] for c in called], [1, 2, 3])
                         called.append((4, config))
 
-                collector = Col(config_file)
-                self.assertIs(collector.configuration, configuration)
+                collector = Col()
+                collector.collect_configuration(config_file)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
@@ -217,7 +202,6 @@ describe TestCase, "Collector":
                         return results[location]
 
                     def add_configuration(slf, config, collect_another_source, done, result, src):
-                        self.assertEqual(config["config_root"], config_root)
                         if "extra" in result:
                             collect_another_source(result["extra"])
                         if "nested" in result:
@@ -228,17 +212,16 @@ describe TestCase, "Collector":
                         self.assertEqual([c[0] for c in called], [1, 2, 2, 2, 3, 3, 3])
                         called.append((4, config))
 
-                collector = Col(config_file)
-                self.assertIs(collector.configuration, configuration)
-                print(called)
+                collector = Col()
+                collector.collect_configuration(config_file)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
                       , (2, other_loc)
                       , (2, another_loc)
-                      , (3, configuration, {"once": {"twice": {"stuff": "a", "a": "b"}}}, another_loc)
-                      , (3, configuration, {"nested": another_loc}, other_loc)
-                      , (3, configuration, {"extra": other_loc}, config_file)
+                      , (3, configuration, {"once": {"twice": {"stuff": "a", "a": "b", "config_root": config_root}}}, another_loc)
+                      , (3, configuration, {"nested": another_loc, "config_root": config_root}, other_loc)
+                      , (3, configuration, {"extra": other_loc, "config_root": config_root}, config_file)
                       , (4, configuration)
                       ]
                     )
@@ -263,7 +246,7 @@ describe TestCase, "Collector":
                         return results[location]
 
                     def add_configuration(slf, config, collect_another_source, done, result, src):
-                        self.assertEqual(config["config_root"], config_root)
+                        self.assertEqual(result["config_root"], config_root)
                         collect_another_source(result["extra"])
                         called.append((3, config, result, src))
 
@@ -271,14 +254,14 @@ describe TestCase, "Collector":
                         self.assertEqual([c[0] for c in called], [1, 2, 2, 3, 3])
                         called.append((4, config))
 
-                collector = Col(config_file)
-                self.assertIs(collector.configuration, configuration)
+                collector = Col()
+                collector.collect_configuration(config_file)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
                       , (2, other_loc)
-                      , (3, configuration, {"extra": config_file}, other_loc)
-                      , (3, configuration, {"extra": other_loc}, config_file)
+                      , (3, configuration, {"extra": config_file, "config_root": config_root}, other_loc)
+                      , (3, configuration, {"extra": other_loc, "config_root": config_root}, config_file)
                       , (4, configuration)
                       ]
                     )
@@ -304,6 +287,7 @@ describe TestCase, "Collector":
                     def home_dir_configuration_location(slf): return home_dir
 
                 with self.fuzzyAssertRaisesError(BadConfiguration, "Some of the configuration was broken", _errors=[BadJson(location=home_dir), BadJson(location=config_file)]):
-                    collector = Col(config_file)
+                    collector = Col()
+                    collector.collect_configuration(config_file)
                 self.assertEqual(called, [0, (1, home_dir), (1, config_file), 2])
 

@@ -14,12 +14,6 @@ class Collector(object):
     BadFileErrorKls = DelfickError
     BadConfigurationErrorKls = DelfickError
 
-    def __init__(self, configuration_file):
-        self.configuration_file = configuration_file
-        self.configuration_folder = os.path.dirname(os.path.abspath(configuration_file))
-
-        self.configuration = self.collect_configuration(configuration_file)
-
     ########################
     ###   HOOKS
     ########################
@@ -66,21 +60,25 @@ class Collector(object):
     ########################
 
     def clone(self, *args, **kwargs):
-        new_collector = self.__class__(self.configuration_file)
+        if not hasattr(self, "configuration_file"):
+            return self.__class__()
+        new_collector = self.__class__()
         new_cli_args = dict(self.configuration["cli_args"].items())
         self.alter_clone_cli_args(new_collector, new_cli_args, *args, **kwargs)
-        new_collector.prepare(new_cli_args)
+        new_collector.prepare(self.configuration_file, new_cli_args)
         return new_collector
 
-    def prepare(self, cli_args, available_tasks=None):
+    def prepare(self, configuration_file, cli_args, available_tasks=None):
         """Do the bespin stuff"""
+        self.configuration_file = configuration_file
+        self.configuration = self.collect_configuration(configuration_file)
+
         self.find_missing_config(self.configuration)
 
         self.configuration.update(
             { "getpass": getpass
             , "collector": self
             , "cli_args": cli_args
-            , "config_root": self.configuration_folder
             }
         , source = "<preparation>"
         )
@@ -98,7 +96,6 @@ class Collector(object):
         errors = []
 
         configuration = self.start_configuration()
-        configuration["config_root"] = self.configuration_folder
 
         sources = [configuration_file]
         home_dir_configuration = self.home_dir_configuration_location()
@@ -130,6 +127,7 @@ class Collector(object):
 
             if extra:
                 result.update(extra)
+            result["config_root"] = os.path.abspath(os.path.dirname(src))
 
             while prefix:
                 part = prefix.pop()

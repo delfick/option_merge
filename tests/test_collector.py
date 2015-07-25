@@ -77,7 +77,7 @@ describe TestCase, "Collector":
                         self.assertEqual(config.as_dict(), {"config_root": config_root, "one": 1})
                         config.converters = mock.Mock(name="converters")
 
-                    def extra_prepare(slf, config, cli_args, available_tasks):
+                    def extra_prepare(slf, config, cli_args):
                         called.append((2, config, cli_args))
                         self.assertEqual(config.as_dict()
                             , { "getpass": getpass
@@ -89,7 +89,7 @@ describe TestCase, "Collector":
                             )
                         self.assertEqual(len(config.converters.mock_calls), 0)
 
-                    def extra_prepare_after_activation(slf, config, cli_args, available_tasks):
+                    def extra_prepare_after_activation(slf, config, cli_args):
                         called.append((3, config, cli_args))
                         config.converters.activate.assert_called_once()
 

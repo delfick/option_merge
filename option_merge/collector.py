@@ -24,10 +24,10 @@ class Collector(object):
     def find_missing_config(self, configuration):
         """Hook to raise errors about missing configuration"""
 
-    def extra_prepare(self, configuration, cli_args, available_tasks):
+    def extra_prepare(self, configuration, cli_args):
         """Hook for any extra preparation before the converters are activated"""
 
-    def extra_prepare_after_activation(self, configuration, cli_args, available_tasks):
+    def extra_prepare_after_activation(self, configuration, cli_args):
         """Hook for any extra preparation after the converters are activated"""
 
     def home_dir_configuration_location(self):
@@ -68,7 +68,7 @@ class Collector(object):
         new_collector.prepare(self.configuration_file, new_cli_args)
         return new_collector
 
-    def prepare(self, configuration_file, cli_args, available_tasks=None):
+    def prepare(self, configuration_file, cli_args):
         """Do the bespin stuff"""
         self.configuration_file = configuration_file
         self.configuration = self.collect_configuration(configuration_file)
@@ -83,9 +83,9 @@ class Collector(object):
         , source = "<preparation>"
         )
 
-        self.extra_prepare(self.configuration, cli_args, available_tasks)
+        self.extra_prepare(self.configuration, cli_args)
         self.configuration.converters.activate()
-        self.extra_prepare_after_activation(self.configuration, cli_args, available_tasks)
+        self.extra_prepare_after_activation(self.configuration, cli_args)
 
     ########################
     ###   CONFIG

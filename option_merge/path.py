@@ -76,10 +76,17 @@ class Path(object):
         return "<Path({0})>".format(str(self))
 
     def __eq__(self, other):
-        return dot_joiner(other) == self.joined()
+        joined = self.joined()
+        if not other and not joined:
+            return True
+
+        if other and joined:
+            return dot_joiner(other) == self.joined()
+
+        return False
 
     def __ne__(self, other):
-        return dot_joiner(other) != self.joined()
+        return not self.__eq__(other)
 
     def __add__(self, other):
         if not other:

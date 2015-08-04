@@ -50,7 +50,7 @@ class Path(object):
         return self.joined()
 
     def __nonzero__(self):
-        return bool(self.path)
+        return bool(self.joined())
 
     def __len__(self):
         if isinstance(self.path, six.string_types):
@@ -59,6 +59,9 @@ class Path(object):
             else:
                 return 0
         else:
+            if isinstance(self.path, list):
+                if not any(item for item in self.path):
+                    return 0
             return len(self.path)
 
     def __iter__(self):

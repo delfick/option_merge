@@ -22,6 +22,7 @@ class Converter(object):
     def __init__(self, convert, convert_path=None):
         self.convert = convert
         self.convert_path = convert_path
+        self.convert_path_joined = dot_joiner(convert_path)
 
     def __call__(self, path, data):
         """Proxy the conversion logic in ``self.convert``"""
@@ -29,8 +30,11 @@ class Converter(object):
 
     def matches(self, path):
         """Check to see if this converter should be used against this path"""
-        cp = self.convert_path
-        return cp and dot_joiner(path) == dot_joiner(cp)
+        if hasattr(path, "joined"):
+            joined_path = path.joined()
+        else:
+            joined_path = dot_joiner(path)
+        return self.convert_path and joined_path == self.convert_path_joined
 
 class Converters(object):
     """

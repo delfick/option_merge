@@ -21,11 +21,14 @@ def value_at(data, path, called_from=None, chain=None):
         keys = list(reversed(sorted(data.keys(), key=lambda d: len(str(d)))))
 
     from option_merge.merge import MergedOptions
-    if path in keys:
+    if Path.inside(path, keys):
         if isinstance(path, Path) and isinstance(data, MergedOptions):
             da = data.get(path.path, ignore_converters=getattr(path, "ignore_converters", False))
         else:
-            da = data[path]
+            if isinstance(path, Path):
+                da = data[path.joined()]
+            else:
+                da = data[path]
 
         if not chain:
             return path, da

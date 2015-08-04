@@ -27,6 +27,13 @@ class Path(object):
         else:
             return Path(path, configuration, converters, ignore_converters, joined=joined or (getattr(path, "joined", lambda: None)() if hasattr(path, "joined") else None))
 
+    @classmethod
+    def inside(kls, path, lst):
+        """Determine if path is inside list of strings"""
+        if isinstance(path, Path):
+            path = path.joined()
+        return path in lst
+
     def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
         self.path = path
         self._joined = joined

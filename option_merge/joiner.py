@@ -3,45 +3,52 @@ Helpers for joining together things
 """
 
 import six
+list_types = (list, tuple)
+string_types = (str, ) + six.string_types
 
-def dot_joiner(*lsts):
+def dot_joiner(item, item_type=None):
     """Join lists of list of strings with a single dot in between each"""
-    if len(lsts) == 1:
-        return dot_joiner_path(lsts[0])
-    elif len(lsts) == 2:
-        return "{0}.{1}".format(dot_joiner_path(lsts[0]), dot_joiner_path(lsts[1]))
-    else:
-        return '.'.join(dot_joiner_path(lst) for lst in lsts)
-
-def dot_joiner_path(lst):
-    """Join list of strings with a single dot in between each"""
-    result = []
-    if hasattr(lst, "joined"):
-        return lst.joined()
-
-    if type(lst) in six.string_types:
-        return lst
-
-    if not type(lst) in (list, tuple):
-        return str(lst)
-
-    for part in lst:
-        if hasattr(part, "joined"):
-            part = part.joined()
+    if item:
+        if item_type in string_types:
+            return item
         else:
-            if type(part) in (list, tuple):
-                part = ''.join(part)
+            return dot_join_item(item, item_type or type(item))
+    else:
+        return ""
 
-            while part and part.startswith("."):
-                part = part[1:]
+def dot_join_item(item, item_type):
+    """
+    Join list of strings with a single dot in between each
 
-            while part and part.endswith("."):
-                part = part[:-1]
+    Note that if the items have dots in them, then it's possible to have multiple dots.
+
+    This is fine, as long as we are consistent
+    """
+    result = []
+    joined = getattr(item, "joined", None)
+    if joined is not None:
+        return joined()
+
+    if item_type not in (list, tuple):
+        return str(item)
+
+    for part in item:
+        part_type = type(part)
+        if part_type not in string_types:
+            joined = getattr(part, "joined", None)
+            if joined is not None:
+                part = joined()
+                if part:
+                    result.append(part)
+                continue
+
+        if part_type in list_types:
+            part = ''.join(part)
 
         if part:
             result.append(part)
 
-    return '.'.join(str(res) for res in result)
+    return '.'.join(result)
 
 def join(one, two):
     """

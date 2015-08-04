@@ -81,6 +81,7 @@ def prefixed_path_list(path, prefix=None):
     """Return the prefixed version of this path as a list"""
     from option_merge.path import Path
     if isinstance(path, Path):
+        res_type = Path
         if prefix:
             res = path.prefixed(prefix)
         else:
@@ -88,9 +89,11 @@ def prefixed_path_list(path, prefix=None):
     else:
         if prefix:
             res = prefix + path
+            res_type = type(res)
         else:
             res = list(path)
-    return res, dot_joiner(res)
+            res_type = list
+    return res, dot_joiner(res, res_type)
 
 def prefixed_path_string(path, prefix=""):
     """Return the prefixed version of this string"""

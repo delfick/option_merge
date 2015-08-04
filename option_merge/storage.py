@@ -51,7 +51,8 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
             else:
                 prefix = ""
         else:
-            if not dot_joiner(prefix).startswith(self.path.joined()):
+            joined_prefix = dot_joiner(prefix)
+            if not joined_prefix.startswith(self.path.joined()):
                 raise hp.NotFound
             else:
                 prefix = Path(prefix).without(self.path)
@@ -218,10 +219,11 @@ class Storage(object):
 
             if not info_path:
                 found_path, val = hp.value_at(data, path, self)
-                yield info_path + found_path, dot_joiner(found_path), val
+                yield info_path + found_path, dot_joiner(found_path, list), val
                 return
 
-            if path.startswith("{0}.".format(dot_joiner(info_path))):
+            joined_info_path = dot_joiner(info_path)
+            if path.startswith("{0}.".format(joined_info_path)):
                 get_at = path.without(info_path)
                 found_path, val = hp.value_at(data, get_at, self)
                 yield info_path + found_path, dot_joiner(found_path), val
@@ -253,7 +255,11 @@ class Storage(object):
 
             try:
                 for key in info.keys_after(path):
-                    joined = dot_joiner([path, key])
+                    if path:
+                        joined = dot_joiner([path, key], list)
+                    else:
+                        joined = key
+
                     if not any(s == joined or joined.startswith("{0}.".format(s)) for s in stopped):
                         if key not in done:
                             yield key
@@ -324,7 +330,8 @@ class Storage(object):
                     found = False
                     break
 
-                path_without_prefix = path_without_prefix.without(dot_joiner(used))
+                if used:
+                    path_without_prefix = path_without_prefix.without(dot_joiner(used))
 
             if found and path_without_prefix == "":
                 if not isinstance(val, dict):

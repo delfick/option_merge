@@ -201,7 +201,7 @@ describe TestCase, "Storage":
 
                 self.assertEqual(
                       list(self.storage.determine_path_and_val(path, info_path, data, source))
-                    , [(["a", "b"], "a.b", val)]
+                    , [(["a", Path("b")], "a.b", val)]
                     )
 
             it "yields nothing if path not in data":

@@ -105,13 +105,16 @@ class Path(object):
 
     def without(self, base):
         """Return a clone of this path without the base"""
-        base = dot_joiner(base)
+        base_type = type(base)
+        if base_type not in (str, ) + six.string_types:
+            base = dot_joiner(base, base_type)
+
         if not self.startswith(base):
             from option_merge import helper as hp
             raise hp.NotFound()
 
         if isinstance(self.path, six.string_types):
-            path = self.path[len(dot_joiner(base)):]
+            path = self.path[len(base):]
             while path.startswith("."):
                 path = path[1:]
             return self.using(path, joined=path)
@@ -125,15 +128,21 @@ class Path(object):
                         res.append(part)
                         continue
 
-                    if base.startswith(str(dot_joiner(part))):
-                        base = base[len(dot_joiner(part)):]
+                    part_type = type(part)
+                    if part_type in (str, ) + six.string_types:
+                        joined_part = part
+                    else:
+                        joined_part = dot_joiner(part, part_type)
+
+                    if base.startswith(joined_part):
+                        base = base[len(joined_part):]
                         while base.startswith('.'):
                             base = base[1:]
-                    elif dot_joiner(part).startswith(base):
-                        res.append(dot_joiner(part)[len(base):])
+                    elif joined_part.startswith(base):
+                        res.append(joined_part[len(base):])
                         base = ""
 
-            return self.using(res, joined=dot_joiner(res))
+            return self.using(res, joined=dot_joiner(res, list))
 
     def prefixed(self, prefix):
         """Return a clone with this prefix to the path"""
@@ -225,6 +234,10 @@ class Path(object):
     def joined(self):
         """Return the dot_join of of the path"""
         if self._joined is None:
-            self._joined = dot_joiner(self.path)
+            path_type = type(self.path)
+            if path_type in (str, ) + six.string_types:
+                self._joined = self.path
+            else:
+                self._joined = dot_joiner(self.path, path_type)
         return self._joined
 

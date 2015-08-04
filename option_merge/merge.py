@@ -126,7 +126,7 @@ class MergedOptions(dict, Mapping):
             self.converters = Converters()
         if isinstance(self.prefix_list, six.string_types):
             self.prefix_list = [self.prefix_list]
-        self.prefix_string = dot_joiner(self.prefix_list)
+        self.prefix_string = dot_joiner(self.prefix_list, list)
 
         self.storage = storage
         if self.storage is None:

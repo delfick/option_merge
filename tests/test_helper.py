@@ -97,6 +97,11 @@ describe TestCase, "prefixed_path_list":
     it "adds prepends prefix":
         p1 = mock.Mock(name="p1")
         p2 = mock.Mock(name="p2")
+
+        self.path.joined.return_value = "path_joined"
+        p1.joined.return_value = "p1_joined"
+        p2.joined.return_value = "p2.joined"
+
         self.assertEqual(hp.prefixed_path_list([self.path], [p1, p2]), ([p1, p2, self.path], "{0}.{1}.{2}".format(p1.joined(), p2.joined(), self.path.joined())))
 
 describe TestCase, "prefixed_path_string":

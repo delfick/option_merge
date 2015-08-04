@@ -12,15 +12,15 @@ import mock
 class TestCase(unittest.TestCase, DelfickErrorTestMixin): pass
 
 describe TestCase, "dot_joiner":
-    it "joins keeping only one dot in between":
+    it "joins keeping all dots in between":
         blah_possibilities = ["blah", ".blah", "blah.", ".blah.", "blah..", "..blah", "..blah.."]
         stuff_possibilities = [pos.replace("blah", "stuff") for pos in blah_possibilities]
 
         for pos in blah_possibilities:
-            self.assertEqual(dot_joiner([pos]), "blah")
+            self.assertEqual(dot_joiner([pos]), pos)
 
         for blahpos, stuffpos in (list(itertools.product(blah_possibilities, stuff_possibilities))):
-            self.assertEqual(dot_joiner([blahpos, stuffpos]), "blah.stuff")#
+            self.assertEqual(dot_joiner([blahpos, stuffpos]), "{0}.{1}".format(blahpos, stuffpos))
 
     it "ignores strings":
         self.assertEqual(dot_joiner("blah"), "blah")

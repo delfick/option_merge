@@ -161,6 +161,15 @@ class VersionedDict(object):
         self.version += 1
         del self.data[key]
 
+    def __eq__(self, other):
+        return self.data == other
+
+    def __nonzero__(self):
+        return self.data.__nonzero__()
+
+    def __bool__(self):
+        return bool(self.data)
+
     def keys(self):
         return self.data.keys()
 

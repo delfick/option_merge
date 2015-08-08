@@ -159,7 +159,7 @@ class VersionedDict(object):
 
     def __delitem__(self, key):
         self.version += 1
-        del self.data
+        del self.data[key]
 
     def keys(self):
         return self.data.keys()

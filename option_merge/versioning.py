@@ -53,41 +53,44 @@ class versioned_value(object):
 
 class versioned_iterable(object):
     """
-    A property that holds a cache of {prefix: {ignore_converters: iterator}}
+    A property that holds a cache of {instance: {prefix: {ignore_converters: iterator}}}
 
     Where the entire cache is revoked if instance.version changes number
     """
+    class First(object): pass
     class NotYet(object): pass
     class Finished(object): pass
 
     def __init__(self, func):
         self.func = func
-        self.cached = {}
-        self.value_cache = {}
-        self.expected_version = 0
+        self.cached_key = "_{0}_cached".format(self.func.__name__)
+        self.value_cache_key = "_{0}_value_cache".format(self.func.__name__)
+        self.expected_version_key = "_{0}_expected_version".format(self.func.__name__)
 
-    def iterator_for(self, instance, prefix, ignore_converters):
-        for item in self.value_cache[prefix][ignore_converters]:
+    def iterator_for(self, instance, prefix, ignore_converters, cached, value_cache):
+        for item in value_cache[prefix][ignore_converters]:
             yield item
 
-        iterator = self.cached[prefix][ignore_converters]
+        iterator = cached[prefix][ignore_converters]
         if iterator is self.Finished:
             return
-        ident = self.cached[prefix][ignore_converters] = uuid.uuid1()
+        ident = cached[prefix][ignore_converters] = uuid.uuid1()
 
         try:
             while True:
                 nxt = iterator.next()
-                if self.cached[prefix][ignore_converters] == ident:
-                    self.value_cache[prefix][ignore_converters].append(nxt)
+                if cached.get(prefix, {}).get(ignore_converters) == ident:
+                    value_cache[prefix][ignore_converters].append(nxt)
                 yield nxt
         except StopIteration:
             iterator.close()
-            self.cached[prefix][ignore_converters] = self.Finished
+            if cached.get(prefix, {}).get(ignore_converters) == ident:
+                cached[prefix][ignore_converters] = self.Finished
 
     def __get__(self, instance=None, owner=None):
         @wraps(self.func)
         def returned(*args, **kwargs):
+
             version = getattr(instance, "version", 0)
             if version is -1:
                 return self.func(instance, *args, **kwargs)
@@ -99,25 +102,36 @@ class versioned_iterable(object):
             else:
                 prefix = getattr(instance, "prefix_string", "")
 
-            if version != self.expected_version:
-                self.cached = {}
-                self.value_cache = {}
-                self.expected_version = version
+            cached = getattr(instance, self.cached_key, {})
+            value_cache = getattr(instance, self.value_cache_key, {})
+            expected_version = getattr(instance, self.expected_version_key, self.First)
 
-            if self.cached.get(prefix, {}).get(ignore_converters, self.NotYet) is not self.Finished:
-                if prefix not in self.cached:
-                    self.cached[prefix] = {}
-                if prefix not in self.value_cache:
-                    self.value_cache[prefix] = {}
+            if version != expected_version:
+                cached = {}
+                value_cache = {}
+                expected_version = version
 
-                self.value_cache[prefix][ignore_converters] = []
+            # We set the caches on the instance
+            # so that they are garbage collected
+            # When the instance gets deleted
+            setattr(instance, self.cached_key, cached)
+            setattr(instance, self.value_cache_key, value_cache)
+            setattr(instance, self.expected_version_key, expected_version)
+
+            if cached.get(prefix, {}).get(ignore_converters, self.NotYet) is not self.Finished:
+                if prefix not in cached:
+                    cached[prefix] = {}
+                if prefix not in value_cache:
+                    value_cache[prefix] = {}
+
+                value_cache[prefix][ignore_converters] = []
                 ret = self.func(instance, *args, **kwargs)
                 if isinstance(ret, list):
-                    self.value_cache[prefix][ignore_converters] = ret
-                    self.cached[prefix][ignore_converters] = self.Finished
+                    value_cache[prefix][ignore_converters] = ret
+                    cached[prefix][ignore_converters] = self.Finished
                 else:
-                    self.cached[prefix][ignore_converters] = self.func(instance, *args, **kwargs)
-            return self.iterator_for(instance, prefix, ignore_converters)
+                    cached[prefix][ignore_converters] = ret
+            return self.iterator_for(instance, prefix, ignore_converters, cached, value_cache)
         return returned
 
 class VersionedDict(object):

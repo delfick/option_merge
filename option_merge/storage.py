@@ -8,6 +8,7 @@ which can be used to get keys and values for some path.
 It is also used to get thesource for particular paths.
 """
 
+from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
 from option_merge.merge import MergedOptions
 from option_merge.value_at import value_at
 from option_merge.joiner import dot_joiner
@@ -64,7 +65,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 yield "", data, []
                 return
 
-            if type(data) not in (dict, MergedOptions):
+            if type(data) not in (dict, VersionedDict, MergedOptions):
                 raise hp.NotFound
 
             if not prefix:
@@ -88,6 +89,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
         for key, _, _ in self.items(prefix):
             yield key
 
+    @versioned_value
     def value_after(self, prefix):
         """Returns the value after prefix"""
         for key, data, short_path in self.items(prefix, want_one=True):
@@ -111,6 +113,7 @@ class Storage(object):
     def __init__(self):
         self.data = []
         self.deleted = []
+        self._version = 0
 
     ########################
     ###   USAGE
@@ -120,7 +123,8 @@ class Storage(object):
         """Add data at the beginning"""
         if not isinstance(path, Path):
             raise ProgrammerError("Path should be a Path object\tgot={0}".format(type(path)))
-        self.data.insert(0, (path, data, source))
+        self._version += 1
+        self.data.insert(0, (path, VersionedDict.convert(data), source))
 
     def get(self, path):
         """Get a single value from a path"""
@@ -138,7 +142,7 @@ class Storage(object):
         if not path:
             return []
 
-        for info in self.get_info(path, chain + [(path, self)], ignore_converters=True):
+        for info in self.get_info(path, ignore_converters=True, chain=chain + [(path, self)]):
             source = info.source
             if callable(info.source):
                 source = info.source()
@@ -166,9 +170,11 @@ class Storage(object):
         for index, (info_path, data, _) in enumerate(self.data):
             dotted_info_path = dot_joiner(info_path)
             if dotted_info_path == path:
+                self._version += 1
                 del self.data[index]
                 return
             elif dotted_info_path.startswith("{0}.".format(path)):
+                self._version += 1
                 del self.data[index]
                 return
             elif not dotted_info_path or path.startswith("{0}.".format(dotted_info_path)):
@@ -184,7 +190,11 @@ class Storage(object):
     ###   IMPLEMENTATION
     ########################
 
-    def get_info(self, path, chain=None, ignore_converters=False):
+    @property
+    def version(self):
+        return [self._version] + [getattr(item, "version", 0) for item in self.data]
+
+    def get_info(self, path, ignore_converters=False, chain=None):
         """Yield DataPath objects for this path in the data"""
         yielded = False
         if not self.data:
@@ -246,6 +256,7 @@ class Storage(object):
             return default
         return source_for
 
+    @versioned_iterable
     def keys_after(self, path, ignore_converters=False):
         """Get all the keys after this path"""
         done = set()
@@ -278,6 +289,7 @@ class Storage(object):
 
         keys = list(reversed(sorted(data.keys())))
         if path in keys:
+            self._version += 1
             del data[path]
             return True
 

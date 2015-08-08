@@ -11,6 +11,7 @@ With the ability to delete from the dictionary and the ability to convert values
 on access.
 """
 
+from option_merge.versioning import versioned_iterable
 from option_merge.converter import Converters
 from option_merge.joiner import dot_joiner
 from option_merge import helper as hp
@@ -149,6 +150,13 @@ class MergedOptions(dict, Mapping):
             merged.update(opts, **kwargs)
         return merged
 
+    @property
+    def version(self):
+        if len(self.storage.data) > 2:
+            return self.storage.version
+        else:
+            return -1
+
     def update(self, options, source=None, **kwargs):
         """Add new options"""
         if options is None: return
@@ -259,6 +267,7 @@ class MergedOptions(dict, Mapping):
         """Return a MergedOptions with this inside"""
         return self.__class__.using(self, converters=self.converters, dont_prefix=self.dont_prefix)
 
+    @versioned_iterable
     def keys(self, ignore_converters=False):
         """Return a de-duplicated list of the keys we know about"""
         return self.storage.keys_after(self.prefix_string, ignore_converters=ignore_converters)
@@ -269,6 +278,7 @@ class MergedOptions(dict, Mapping):
         for key in self.keys(ignore_converters=ignore_converters):
             yield key, self.__getitem__(key, ignore_converters=ignore_converters)
 
+    @versioned_iterable
     def values(self):
         """Return the values"""
         for key in self.keys():

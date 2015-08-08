@@ -8,6 +8,8 @@ which can be used to get keys and values for some path.
 It is also used to get thesource for particular paths.
 """
 
+from option_merge.merge import MergedOptions
+from option_merge.value_at import value_at
 from option_merge.joiner import dot_joiner
 from option_merge import helper as hp
 from option_merge.path import Path
@@ -62,7 +64,6 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 yield "", data, []
                 return
 
-            from option_merge.merge import MergedOptions
             if type(data) not in (dict, MergedOptions):
                 raise hp.NotFound
 
@@ -218,14 +219,14 @@ class Storage(object):
                 return
 
             if not info_path:
-                found_path, val = hp.value_at(data, path, self)
+                found_path, val = value_at(data, path, self)
                 yield info_path + found_path, dot_joiner(found_path, list), val
                 return
 
             joined_info_path = dot_joiner(info_path)
             if path.startswith("{0}.".format(joined_info_path)):
                 get_at = path.without(info_path)
-                found_path, val = hp.value_at(data, get_at, self)
+                found_path, val = value_at(data, get_at, self)
                 yield info_path + found_path, dot_joiner(found_path), val
                 return
 
@@ -324,7 +325,7 @@ class Storage(object):
                     path_without_prefix = Path([])
 
                 try:
-                    used, val = hp.value_at(val, path_without_prefix, self)
+                    used, val = value_at(val, path_without_prefix, self)
                     found = True
                 except hp.NotFound:
                     found = False

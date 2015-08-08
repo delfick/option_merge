@@ -13,7 +13,6 @@ on access.
 
 from option_merge.converter import Converters
 from option_merge.joiner import dot_joiner
-from option_merge.storage import Storage
 from option_merge import helper as hp
 from option_merge.path import Path
 
@@ -129,6 +128,7 @@ class MergedOptions(dict, Mapping):
         self.prefix_string = dot_joiner(self.prefix_list, list)
 
         self.storage = storage
+        from option_merge.storage import Storage
         if self.storage is None:
             self.storage = Storage()
 

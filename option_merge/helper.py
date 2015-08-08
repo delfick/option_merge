@@ -79,7 +79,6 @@ def without_prefix(path, prefix=""):
 
 def prefixed_path_list(path, prefix=None):
     """Return the prefixed version of this path as a list"""
-    from option_merge.path import Path
     if isinstance(path, Path):
         res_type = Path
         if prefix:

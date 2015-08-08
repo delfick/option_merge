@@ -1,13 +1,13 @@
 from functools import wraps
 import uuid
 
-import __builtin__
-orig_isinstance = __builtin__.isinstance
+from six.moves import builtins
+orig_isinstance = builtins.isinstance
 def new_isinstance(obj, kls):
     if kls == dict and isinstance(obj, VersionedDict):
         return True
     return orig_isinstance(obj, kls)
-__builtin__.isinstance = new_isinstance
+builtins.isinstance = new_isinstance
 
 class versioned_value(object):
     """
@@ -78,7 +78,7 @@ class versioned_iterable(object):
 
         try:
             while True:
-                nxt = iterator.next()
+                nxt = next(iterator)
                 if cached.get(prefix, {}).get(ignore_converters) == ident:
                     value_cache[prefix][ignore_converters].append(nxt)
                 yield nxt

@@ -434,7 +434,7 @@ describe TestCase, "Converters":
             self.assertIs(prop.__get__()(c, d, a=b, b=a), converted)
 
             converter.assert_called_once_with(c, d, a=b, b=a)
-            instance.convert.assert_called_once()
+            instance.convert.assert_called_once_with()
 
         it "can be used as a property":
             givenresult = mock.Mock(name="givenresult")

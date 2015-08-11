@@ -91,7 +91,7 @@ describe TestCase, "Collector":
 
                     def extra_prepare_after_activation(slf, config, cli_args):
                         called.append((3, config, cli_args))
-                        config.converters.activate.assert_called_once()
+                        config.converters.activate.assert_called_once_with()
 
                 collector = Col()
                 self.assertEqual(called, [])

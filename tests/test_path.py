@@ -281,7 +281,7 @@ describe TestCase, "Path":
 			self.assertIs(converters.converted_val(path), converted)
 
 			converter.assert_called_once_with(path, value)
-			converted.post_setup.assert_called_once()
+			converted.post_setup.assert_called_once_with()
 
 	describe "finding a converter":
 		before_each:

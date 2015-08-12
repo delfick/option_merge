@@ -95,12 +95,16 @@ class versioned_iterable(object):
             if version is -1:
                 return self.func(instance, *args, **kwargs)
 
-            ignore_converters = kwargs.get('ignore_converters', False)
-
             if args:
                 prefix = args[0]
             else:
                 prefix = getattr(instance, "prefix_string", "")
+
+            # Ignore_converters can be specified in three places, in this order
+            # kwarg to the function
+            # property on the path
+            # property on the instance
+            ignore_converters = kwargs.get('ignore_converters', getattr(prefix, 'ignore_converters', getattr(instance, 'ignore_converters', False)))
 
             cached = getattr(instance, self.cached_key, {})
             value_cache = getattr(instance, self.value_cache_key, {})

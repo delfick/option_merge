@@ -16,7 +16,6 @@ class versioned_value(object):
         self.expected_version = 0
 
     def __get__(self, instance=None, owner=None):
-        @wraps(self.func)
         def returned(*args, **kwargs):
             version = getattr(instance, "version", 0)
             if version is -1:
@@ -80,7 +79,6 @@ class versioned_iterable(object):
                 cached[prefix][ignore_converters] = self.Finished
 
     def __get__(self, instance=None, owner=None):
-        @wraps(self.func)
         def returned(*args, **kwargs):
 
             version = getattr(instance, "version", 0)

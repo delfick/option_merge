@@ -3,7 +3,7 @@
 from option_merge.converter import Converter, Converters
 from option_merge.storage import Storage, DataPath
 from option_merge.merge import MergedOptions
-from option_merge.helper import NotFound
+from option_merge.not_found import NotFound
 from option_merge.path import Path
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -452,56 +452,56 @@ describe TestCase, "DataPath":
     describe "keys_after":
         it "returns keys from data if path matches":
             p = DataPath(Path(["1", "2"]), {"a":3, "b":4}, s1)
-            self.assertEqual(sorted(p.keys_after("1.2")), sorted(["a", "b"]))
+            self.assertEqual(sorted(p.keys_after(Path("1.2"))), sorted(["a", "b"]))
 
             p = DataPath(Path(["1"]), {"a":3, "b":4}, s1)
-            self.assertEqual(sorted(p.keys_after("1")), sorted(["a", "b"]))
+            self.assertEqual(sorted(p.keys_after(Path("1"))), sorted(["a", "b"]))
 
             p = DataPath(Path([]), {"a": {1:2}})
-            self.assertEqual(sorted(p.keys_after("a")), sorted([1]))
+            self.assertEqual(sorted(p.keys_after(Path("a"))), sorted([1]))
 
         it "raises NotFound if no match":
             p = DataPath(Path(["1", "2"]), {"a":3, "b":4}, s1)
             with self.fuzzyAssertRaisesError(NotFound):
-                self.assertEqual(sorted(p.keys_after("1.3")), sorted([]))
+                self.assertEqual(sorted(p.keys_after(Path("1.3"))), sorted([]))
 
             with self.fuzzyAssertRaisesError(NotFound):
-                self.assertEqual(sorted(p.keys_after("3")), sorted([]))
+                self.assertEqual(sorted(p.keys_after(Path("3"))), sorted([]))
 
         it "returns first key after part if path is bigger":
             p = DataPath(Path(["1", "2", "3"]), {"a":3, "b":4}, s1)
-            self.assertEqual(sorted(p.keys_after("1")), sorted(["2"]))
+            self.assertEqual(sorted(p.keys_after(Path("1"))), sorted(["2"]))
 
         it "raises NotFound if ask for a bigger path than exists":
             p = DataPath(Path(["1", "2", "3"]), {"a":3, "b":4}, s1)
             with self.fuzzyAssertRaisesError(NotFound):
-               sorted(p.keys_after("1.2.3.4"))
+               sorted(p.keys_after(Path("1.2.3.4")))
 
     describe "value_after":
         it "returns value":
             p = DataPath(Path(["a"]), d1, s1)
-            self.assertIs(p.value_after("a"), d1)
+            self.assertIs(p.value_after(Path("a")), d1)
 
             p = DataPath(Path([]), {"a": d1}, s1)
-            self.assertIs(p.value_after("a"), d1)
+            self.assertIs(p.value_after(Path("a")), d1)
 
         it "makes dicts from incomplete paths":
             p = DataPath(Path(["a", "b", "c"]), d1, s1)
-            self.assertEqual(p.value_after("a"), {"b": {"c": d1}})
+            self.assertEqual(p.value_after(Path("a")), {"b": {"c": d1}})
 
             p = DataPath(Path(["a", "b"]), {"c": d1}, s1)
-            self.assertEqual(p.value_after("a"), {"b": {"c": d1}})
+            self.assertEqual(p.value_after(Path("a")), {"b": {"c": d1}})
 
         it "raises NotFound if not found":
             p = DataPath(Path(["a", "b", "c"]), d1, s1)
             with self.fuzzyAssertRaisesError(NotFound):
-                self.assertEqual(p.value_after("b"), None)
+                self.assertEqual(p.value_after(Path("b")), None)
 
             p = DataPath(Path(["a"]), {"b": d1}, s1)
             with self.fuzzyAssertRaisesError(NotFound):
-                p.value_after("a.c")
+                p.value_after(Path("a.c"))
 
             p = DataPath(Path(["1", "2", "3"]), {"a":3, "b":4}, s1)
             with self.fuzzyAssertRaisesError(NotFound):
-               p.value_after("1.2.3.4")
+               p.value_after(Path("1.2.3.4"))
 

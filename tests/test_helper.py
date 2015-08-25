@@ -13,49 +13,30 @@ import mock
 
 class TestCase(unittest.TestCase, DelfickErrorTestMixin): pass
 
-describe TestCase, "without_prefix":
-    before_each:
-        self.path = mock.Mock(name="path", spec=[])
-
-    it "returns path as is if no prefix":
-        self.assertIs(hp.without_prefix(self.path), self.path)
-
-    it "returns path as is if no path":
-        self.assertIs(hp.without_prefix(None), None)
-
-    it "returns empty string if equals prefix":
-        self.assertIs(hp.without_prefix(self.path, prefix=self.path), "")
-
-    it "returns string without prefix if it startswith it":
-        self.assertEqual(hp.without_prefix("somewhere.nice.tree", "somewhere.nice"), "tree")
-
-    it "returns path as is if doesn't start with prefix":
-        self.assertEqual(hp.without_prefix("somewhere.nicetree", "somewhere.nice"), "somewhere.nicetree")
-
-    it "uses without method if available":
-        path = mock.Mock(name="path")
-        prefix = mock.Mock(name="prefix")
-        new_path = mock.Mock(name="new_path")
-        path.without.return_value = new_path
-        self.assertIs(hp.without_prefix(path, prefix), new_path)
-        path.without.assert_called_once_with(prefix)
-
 describe TestCase, "prefixed_path_list":
     before_each:
         self.path = mock.Mock(name="path")
 
-    it "returns path if no prefix":
-        self.assertEqual(hp.prefixed_path_list([Path("1")]), (Path("1"), "1"))
+    it "returns a clone if there is no prefix":
+        path = [1, 2, 3]
+        cloned, joined = hp.prefixed_path_list(path)
+        self.assertEqual(cloned, [1, 2, 3])
+        self.assertEqual(joined, "1.2.3")
 
-    it "adds prepends prefix":
-        p1 = mock.Mock(name="p1")
-        p2 = mock.Mock(name="p2")
+        cloned.append(4)
+        self.assertEqual(cloned, [1, 2, 3, 4])
+        self.assertEqual(path, [1, 2, 3])
 
-        self.path.joined.return_value = "path_joined"
-        p1.joined.return_value = "p1_joined"
-        p2.joined.return_value = "p2.joined"
+    it "returns it prefixed if there is a prefix":
+        path = [1, 2, 3]
+        prefix = [4, 5, 6]
+        prefixed, joined = hp.prefixed_path_list(path, prefix=prefix)
+        self.assertEqual(prefixed, [4, 5, 6, 1, 2, 3])
+        self.assertEqual(joined, "4.5.6.1.2.3")
 
-        self.assertEqual(hp.prefixed_path_list([self.path], [p1, p2]), ([p1, p2, self.path], "{0}.{1}.{2}".format(p1.joined(), p2.joined(), self.path.joined())))
+        prefixed.append(4)
+        self.assertEqual(prefixed, [4, 5, 6, 1, 2, 3, 4])
+        self.assertEqual(path, [1, 2, 3])
 
 describe TestCase, "prefixed_path_string":
     it "removes superfluous dots":

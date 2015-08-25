@@ -27,19 +27,19 @@ describe TestCase, "dot_joiner":
 
 describe TestCase, "join":
     it "Joins as lists":
-        self.assertEqual(join(Path([]), Path([])), Path([]))
-        self.assertEqual(join(Path([""]), Path([])), Path([]))
-        self.assertEqual(join(Path([""]), Path([""])), Path([]))
+        self.assertEqual(join(Path([]), Path([])), [])
+        self.assertEqual(join(Path([""]), Path([])), [])
+        self.assertEqual(join(Path([""]), Path([""])), [])
 
-        self.assertEqual(join(Path(["a", "b", "c"]), Path(["d", "e", "f"])), Path(["a", "b", "c", "d", "e", "f"]))
-        self.assertEqual(join(Path(["a", "b", "c"]), ["d", "e", "f"]), Path(["a", "b", "c", "d", "e", "f"]))
-        self.assertEqual(join(["a", "b", "c"], Path(["d", "e", "f"])), Path(["a", "b", "c", "d", "e", "f"]))
-        self.assertEqual(join(["a", "b", "c"], ["d", "e", "f"]), Path(["a", "b", "c", "d", "e", "f"]))
+        self.assertEqual(join(Path(["a", "b", "c"]), Path(["d", "e", "f"])), ["a", "b", "c", "d", "e", "f"])
+        self.assertEqual(join(Path(["a", "b", "c"]), ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
+        self.assertEqual(join(["a", "b", "c"], Path(["d", "e", "f"])), ["a", "b", "c", "d", "e", "f"])
+        self.assertEqual(join(["a", "b", "c"], ["d", "e", "f"]), ["a", "b", "c", "d", "e", "f"])
 
     it "Joins as strings":
-        self.assertEqual(join(Path(""), Path("")), Path(""))
-        self.assertEqual(join(Path("a.b.c"), Path("d.e.f")), Path("a.b.c.d.e.f"))
-        self.assertEqual(join("a.b.c", Path("d.e.f")), Path("a.b.c.d.e.f"))
-        self.assertEqual(join("a.b.c", "d.e.f"), Path("a.b.c.d.e.f"))
-        self.assertEqual(join(Path("a.b.c"), "d.e.f"), Path("a.b.c.d.e.f"))
+        self.assertEqual(join(Path(""), Path("")), [])
+        self.assertEqual(join(Path("a.b.c"), Path("d.e.f")), ["a.b.c", "d.e.f"])
+        self.assertEqual(join("a.b.c", Path("d.e.f")), ["a.b.c", "d.e.f"])
+        self.assertEqual(join("a.b.c", "d.e.f"), ["a.b.c", "d.e.f"])
+        self.assertEqual(join(Path("a.b.c"), "d.e.f"), ["a.b.c", "d.e.f"])
 

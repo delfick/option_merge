@@ -1,8 +1,8 @@
 # coding: spec
 
 from option_merge.converter import Converters
+from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
-from option_merge import helper as hp
 from option_merge.path import Path
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
@@ -119,10 +119,10 @@ describe TestCase, "Path":
 			self.assertEqual(Path(["1", "2", "3"]).without(Path("1.2")), Path("3"))
 
 		it "raises NotFound if the prefix is not in the path":
-			with self.fuzzyAssertRaisesError(hp.NotFound):
+			with self.fuzzyAssertRaisesError(NotFound):
 				Path(["1", "2", "3"]).without("1.2.3.4")
 
-			with self.fuzzyAssertRaisesError(hp.NotFound):
+			with self.fuzzyAssertRaisesError(NotFound):
 				Path(["1", "2", "3"]).without("5.2")
 
 		it "returns the path if base is empty":
@@ -207,7 +207,7 @@ describe TestCase, "Path":
 			self.assertIs(new_path.ignore_converters, ignore_converters2)
 
 	describe "Clone":
-		it "just returns itself":
+		it "Returns a new path with same everything":
 			p1 = mock.Mock(name="p1")
 			conf = mock.Mock(name="conf")
 			converters = mock.Mock(name="converters")
@@ -215,7 +215,10 @@ describe TestCase, "Path":
 
 			path = Path(p1, conf, converters, ignore_converters=ignore_converters)
 			new_path = path.clone()
-			assert new_path is path
+			self.assertIs(path.path, new_path.path)
+			self.assertIs(path.converters, new_path.converters)
+			self.assertIs(path.configuration, new_path.configuration)
+			self.assertIs(path.ignore_converters, new_path.ignore_converters)
 
 	describe "ignoring_converters":
 		it "returns a clone with the same path and ignore_converters default to True":

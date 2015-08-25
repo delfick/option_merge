@@ -5,8 +5,8 @@ from option_merge import (
     , ConverterProperty, KeyValuePairsConverter, AttributesConverter
     )
 from option_merge.converter import Converter
+from option_merge.not_found import NotFound
 from option_merge.storage import Storage
-from option_merge.helper import NotFound
 
 from noseOfYeti.tokeniser.support import noy_sup_setUp
 from delfick_error import DelfickErrorTestMixin
@@ -106,7 +106,7 @@ describe TestCase, "MergedOptions":
             assert ["eight"] not in merge
 
             assert ["nine.ten", "eleven"] in merge
-            assert ["nine", "ten", "eleven"] in merge
+            assert ["nine", "ten", "eleven"] not in merge
 
         it "doesn't convert when testing membership":
             class Other(object): pass

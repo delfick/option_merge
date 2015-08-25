@@ -331,23 +331,15 @@ class Storage(object):
             prefix, data, _ = self.data[i]
 
             if prefix:
-                prefix = list(prefix)
-                while prefix:
-                    key = prefix.pop()
+                prefixer = list(prefix)
+                while prefixer:
+                    key = prefixer.pop()
                     data = VersionedDict({key: data})
-                prefix = key
-
-            try:
-                if path:
-                    path_without_prefix = path.without(prefix)
-                else:
-                    path_without_prefix = path
-            except NotFound:
-                continue
 
             val = data
             used = None
             found = False
+            path_without_prefix = path
             while not found or path_without_prefix:
                 if hasattr(data, "as_dict"):
                     val = val.as_dict(path_without_prefix, seen=seen, ignore=ignore)

@@ -30,13 +30,6 @@ class Path(object):
             joined = dot_joiner(path, item_type=path_type)
             return Path(path, configuration, converters, ignore_converters, joined=joined)
 
-    @classmethod
-    def inside(kls, path, lst):
-        """Determine if path is inside list of strings"""
-        if isinstance(path, Path):
-            path = path.joined()
-        return path in lst
-
     def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
         self.path = path
         self.path_type = type(self.path)

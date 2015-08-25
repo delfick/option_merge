@@ -4,7 +4,11 @@ from option_merge.not_found import NotFound
 from option_merge.path import Path
 
 def value_at(data, path, called_from=None, chain=None):
-    """Return the value at this path"""
+    """
+    Return the value at this path
+
+    It is assumed path is a Path object
+    """
     if not chain:
         chain = []
 
@@ -15,20 +19,22 @@ def value_at(data, path, called_from=None, chain=None):
     if data_type not in (dict, VersionedDict, MergedOptions):
         raise NotFound
 
-    if hasattr(data, "reversed_keys"):
-        keys = list(data.reversed_keys())
+    joined = path.joined()
     isMergedOptions = data_type is MergedOptions
-    else:
-        keys = list(reversed(sorted(data.keys(), key=lambda d: len(str(d)))))
 
-    if Path.inside(path, keys):
+    if not data:
+        keys = []
+    else:
+        if hasattr(data, "reversed_keys"):
+            keys = list(data.reversed_keys())
+        else:
+            keys = list(reversed(sorted(data.keys(), key=lambda d: len(str(d)))))
+
+    if joined in keys:
         if isMergedOptions:
             da = data.get(path.path, ignore_converters=getattr(path, "ignore_converters", False))
         else:
-            if isinstance(path, Path):
-                da = data[path.joined()]
-            else:
-                da = data[path]
+            da = data[joined]
 
         if not chain:
             return path, da

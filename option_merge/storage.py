@@ -313,13 +313,11 @@ class Storage(object):
             prefix, data, _ = self.data[i]
 
             if prefix:
-                prefix = list(prefix[:])
+                prefix = list(prefix)
                 while prefix:
-                    data = {prefix.pop(): data}
-                if path:
-                    prefix, data = list(data.items())[0]
-                else:
-                    prefix = list(data.keys())[0]
+                    key = prefix.pop()
+                    data = VersionedDict({key: data})
+                prefix = key
 
             try:
                 if path:
@@ -348,10 +346,11 @@ class Storage(object):
                     path_without_prefix = path_without_prefix.without(dot_joiner(used))
 
             if found and path_without_prefix == "":
-                if not isinstance(val, dict):
+                is_dict = lambda item: type(item) in (dict, VersionedDict, MergedOptions) or isinstance(item, dict)
+                if not is_dict(val):
                     result = val
                 else:
-                    if not isinstance(result, dict):
+                    if not is_dict(result):
                         result = {}
                     hp.merge_into_dict(result, val, seen, ignore=ignore)
 

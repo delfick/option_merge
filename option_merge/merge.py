@@ -15,7 +15,6 @@ from option_merge.versioning import versioned_iterable
 from option_merge.converter import Converters
 from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
-from option_merge import helper as hp
 from option_merge.path import Path
 
 from delfick_error import DelfickError
@@ -33,6 +32,7 @@ class KeyValuePairsConverter(object):
 
     def convert(self):
         """Return us a MergedOptions from our pairs"""
+        from option_merge import helper as hp
         return MergedOptions().using(*[hp.make_dict(key[0], key[1:], value) for key, value in self.pairs], source=self.source)
 
 class AttributesConverter(object):
@@ -177,10 +177,11 @@ class MergedOptions(dict, Mapping):
 
             if any(isinstance(val, unprefixed) for unprefixed in self.dont_prefix):
                 return val
-            elif isinstance(val, dict):
+            elif type(val) in (dict, VersionedDict, MergedOptions) or isinstance(val, dict):
                 return self.prefixed(path, already_prefixed=True)
             else:
                 return val
+
         raise KeyError(path)
 
     def __contains__(self, path):

@@ -1,3 +1,6 @@
+from option_merge.versioning import VersionedDict
+from option_merge.merge import MergedOptions
+
 import string
 import types
 import six
@@ -59,7 +62,7 @@ class MergedOptionStringFormatter(string.Formatter):
         if special:
             return special
         else:
-            if isinstance(obj, dict) or any(isinstance(obj, typ) for typ in (types.LambdaType, types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.BuiltinMethodType)):
+            if type(obj) in (VersionedDict, MergedOptions) or isinstance(obj, dict) or any(isinstance(obj, typ) for typ in (types.LambdaType, types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.BuiltinMethodType)):
                 return obj
             else:
                 return super(MergedOptionStringFormatter, self).format_field(obj, format_spec)

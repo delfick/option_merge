@@ -3,6 +3,8 @@ The collector object is responsible for collecting configuration
 and setting up converters
 """
 
+from option_merge.versioning import VersionedDict
+
 from delfick_error import DelfickError
 from getpass import getpass
 import logging
@@ -115,9 +117,9 @@ class Collector(object):
 
             try:
                 if os.stat(src).st_size == 0:
-                    result = {}
+                    result = VersionedDict({})
                 else:
-                    result = self.read_file(src)
+                    result = VersionedDict(self.read_file(src))
             except self.BadFileErrorKls as error:
                 errors.append(error)
                 return
@@ -131,7 +133,7 @@ class Collector(object):
 
             while prefix:
                 part = prefix.pop()
-                result = {part: result}
+                result = VersionedDict({part: result})
 
             self.add_configuration(configuration, add_configuration, done, result, src)
 

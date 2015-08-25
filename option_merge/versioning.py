@@ -1,13 +1,5 @@
-from functools import wraps
-import uuid
-
-from six.moves import builtins
-orig_isinstance = builtins.isinstance
-def new_isinstance(obj, kls):
-    if kls == dict and isinstance(obj, VersionedDict):
-        return True
-    return orig_isinstance(obj, kls)
-builtins.isinstance = new_isinstance
+import random
+import time
 
 class versioned_value(object):
     """

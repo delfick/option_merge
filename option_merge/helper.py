@@ -1,3 +1,5 @@
+from option_merge.versioning import VersionedDict
+from option_merge.merge import MergedOptions
 from option_merge.joiner import dot_joiner
 from option_merge.path import Path
 
@@ -63,10 +65,10 @@ def prefixed_path_string(path, prefix=""):
 def make_dict(first, rest, data):
     """Make a dictionary from a list of keys"""
     last = first
-    result = {first: data}
+    result = VersionedDict({first: data})
     current = result
     for part in rest:
-        current[last] = {}
+        current[last] = VersionedDict({})
         current = current[last]
         current[part] = data
         last = part
@@ -85,9 +87,10 @@ def merge_into_dict(target, source, seen=None, ignore=None):
         if key in ignore:
             continue
 
-        if isinstance(val, dict):
-            if not isinstance(target.get(key), dict):
-                target[key] = {}
+        is_dict = lambda item: type(item) in (dict, VersionedDict, MergedOptions) or isinstance(item, dict)
+        if is_dict(val):
+            if not is_dict(target.get(key)):
+                target[key] = VersionedDict({})
             merge_into_dict(target[key], val, seen=seen)
         else:
             target[key] = val

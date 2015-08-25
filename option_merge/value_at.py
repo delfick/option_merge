@@ -45,12 +45,9 @@ def value_at(data, path, called_from=None, chain=None):
         if path.first_part_is(key):
             try:
                 if isMergedOptions:
-
-                key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
-
-                    nxt = data.get(key.path, ignore_converters=getattr(key, "ignore_converters", False))
+                    nxt = data.get(key, ignore_converters=path.ignore_converters)
                 else:
-                    nxt = data[key.path]
+                    nxt = data[key]
 
                 storage = getattr(nxt, "storage", None)
                 if storage and called_from is storage:

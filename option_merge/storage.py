@@ -17,14 +17,17 @@ from option_merge import helper as hp
 from option_merge.path import Path
 
 from delfick_error import ProgrammerError
-from collections import defaultdict
-from namedlist import namedlist
 
-class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
+class DataPath(object):
     """
     Encapsulates a (path, data, source) triplet and getting keys and values from
     that path in the data.
     """
+
+    def __init__(self, path, data, source=None):
+        self.path = path
+        self.data = data
+        self.source = source
 
     def items(self, prefix, want_one=False):
         """

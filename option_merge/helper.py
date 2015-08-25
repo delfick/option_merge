@@ -42,16 +42,16 @@ def prefixed_path_list(path, prefix=None):
 
 def prefixed_path_string(path, prefix=""):
     """Return the prefixed version of this string"""
-    while path and path.startswith("."):
+    while path and path[0] == '.':
         path = path[1:]
 
-    while path and path.endswith("."):
+    while path and path[-1] == ".":
         path = path[:-1]
 
-    while prefix and prefix.startswith("."):
+    while prefix and prefix[0] == ".":
         prefix = prefix[1:]
 
-    while prefix and prefix.endswith("."):
+    while prefix and prefix[-1] == ".":
         prefix = prefix[:-1]
 
     if not prefix:

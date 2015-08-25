@@ -57,7 +57,10 @@ class DataPath(object):
             raise NotFound
         """
         data = self.data
-        if not prefix or self.path.startswith("{0}.".format(prefix)) or self.path == prefix:
+        joined = self.path.joined()
+        joined_prefix = prefix.joined()
+
+        if not prefix or joined == joined_prefix or joined.startswith(joined_prefix + '.'):
             shortened_path = self.path.without(prefix)
             if shortened_path:
                 yield list(shortened_path)[0], data, list(shortened_path)[1:]
@@ -65,9 +68,8 @@ class DataPath(object):
             else:
                 prefix = ""
         else:
-            joined_prefix = dot_joiner(prefix)
-            if not joined_prefix.startswith(self.path.joined()):
-                raise hp.NotFound
+            if not joined_prefix.startswith(joined):
+                raise NotFound
             else:
                 prefix = Path(prefix).without(self.path)
 
@@ -223,8 +225,7 @@ class Storage(object):
         for info_path, data, source in self.data:
             for full_path, found_path, val in self.determine_path_and_val(path, info_path, data, source):
                 source = self.make_source_for_function(val, found_path, chain, default=source)
-                path = Path.convert(path).ignoring_converters(ignore_converters)
-                yield DataPath(path.using(full_path), val, source)
+                yield DataPath(full_path, val, source)
                 yielded = True
 
         if not yielded:
@@ -236,26 +237,27 @@ class Storage(object):
 
         Where found_path is the path relative to the data
         """
-        path = Path.convert(path)
-        try:
-            if path == info_path:
-                yield info_path, "", data
-                return
+        joined_path = dot_joiner(path)
+        joined_info_path = dot_joiner(info_path)
+        if joined_path == joined_info_path:
+            yield info_path, "", data
+            return
 
+        try:
             if not info_path:
-                found_path, val = value_at(data, path, self)
+                found_path, val = value_at(data, Path.convert(path), self)
                 yield info_path + found_path, dot_joiner(found_path, list), val
                 return
 
-            joined_info_path = dot_joiner(info_path)
-            if path.startswith("{0}.".format(joined_info_path)):
-                get_at = path.without(info_path)
+            if joined_path.startswith(joined_info_path + '.'):
+                get_at = Path.convert(path).without(info_path)
                 found_path, val = value_at(data, get_at, self)
                 yield info_path + found_path, dot_joiner(found_path), val
                 return
 
             # We are only part way into info_path
-            for key, data, short_path in DataPath(path.using(info_path), data, source).items(path, want_one=True):
+            path = Path.convert(path)
+            for key, data, short_path in DataPath(Path.convert(info_path), data, source).items(path, want_one=True):
                 yield path, "", hp.make_dict(key, short_path, data)
         except NotFound:
             pass
@@ -346,7 +348,7 @@ class Storage(object):
             while not found or path_without_prefix:
                 if hasattr(data, "as_dict"):
                     val = val.as_dict(path_without_prefix, seen=seen, ignore=ignore)
-                    path_without_prefix = Path([])
+                    path_without_prefix = ""
 
                 try:
                     used, val = value_at(val, path_without_prefix, self)
@@ -355,7 +357,7 @@ class Storage(object):
                     found = False
                     break
 
-                if used:
+                if used and path_without_prefix:
                     path_without_prefix = path_without_prefix.without(dot_joiner(used))
 
             if found and path_without_prefix == "":

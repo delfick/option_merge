@@ -17,11 +17,12 @@ def value_at(data, path, called_from=None, chain=None):
 
     if hasattr(data, "reversed_keys"):
         keys = list(data.reversed_keys())
+    isMergedOptions = data_type is MergedOptions
     else:
         keys = list(reversed(sorted(data.keys(), key=lambda d: len(str(d)))))
 
     if Path.inside(path, keys):
-        if isinstance(path, Path) and isinstance(data, MergedOptions):
+        if isMergedOptions:
             da = data.get(path.path, ignore_converters=getattr(path, "ignore_converters", False))
         else:
             if isinstance(path, Path):
@@ -37,11 +38,11 @@ def value_at(data, path, called_from=None, chain=None):
     for key in keys:
         if path.startswith("{0}.".format(key)):
             try:
+                if isMergedOptions:
                 prefix = Path.convert(without_prefix(path, key)).ignoring_converters(getattr(path, "ignore_converters", False))
 
                 key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
 
-                if isinstance(data, MergedOptions):
                     nxt = data.get(key.path, ignore_converters=getattr(key, "ignore_converters", False))
                 else:
                     nxt = data[key.path]

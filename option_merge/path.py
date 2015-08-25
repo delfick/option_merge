@@ -37,6 +37,8 @@ class Path(object):
 
     def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
         self.path = path
+        self.path_type = type(self.path)
+        self.path_is_string = self.path_type in (str, ) + six.string_types
         self._joined = joined
         self.converters = converters
         self.configuration = configuration
@@ -54,19 +56,19 @@ class Path(object):
         return bool(self.joined())
 
     def __len__(self):
-        if isinstance(self.path, six.string_types):
+        if self.path_is_string:
             if self.path:
                 return 1
             else:
                 return 0
         else:
-            if isinstance(self.path, list):
+            if self.path_type in (list, tuple):
                 if not any(item for item in self.path):
                     return 0
             return len(self.path)
 
     def __iter__(self):
-        if isinstance(self.path, six.string_types):
+        if self.path_is_string:
             if self.path:
                 yield self.path
         else:
@@ -100,7 +102,7 @@ class Path(object):
 
     def __getitem__(self, key):
         path = self.path
-        if isinstance(path, six.string_types):
+        if self.path_is_string:
             path = [path]
         return path[key]
 
@@ -113,7 +115,7 @@ class Path(object):
         if not self.startswith(base):
             raise NotFound()
 
-        if isinstance(self.path, six.string_types):
+        if self.path_is_string:
             path = self.path[len(base):]
             while path.startswith("."):
                 path = path[1:]

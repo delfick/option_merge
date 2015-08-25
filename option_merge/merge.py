@@ -298,16 +298,20 @@ class MergedOptions(dict, Mapping):
         if converters is None:
             converters = self.converters
 
-        if isinstance(path, Path) and path.ignore_converters is ignore_converters and path.converters is converters:
+        path_type = type(path)
+        isPath = path_type is Path
+        if isPath and path.ignore_converters is ignore_converters and path.converters is converters:
             return path
 
-        joined = None
-        if hasattr(path, "joined"):
-            path, joined = path, path.joined()
-        elif isinstance(path, six.string_types):
-            path, joined = hp.prefixed_path_string(path, self.prefix_string)
-        elif isinstance(path, (list, tuple)):
-            path, joined = hp.prefixed_path_list(path, self.prefix_list)
+        if isPath:
+            joined = path.joined()
+        else:
+            from option_merge import helper as hp
+            if path_type in (list, tuple):
+                path, joined = hp.prefixed_path_list(path, self.prefix_list)
+            else:
+                path, joined = hp.prefixed_path_string(path, self.prefix_string)
+
         return Path.convert(path, self, converters=converters, joined=joined).ignoring_converters(ignore_converters)
 
     def add_converter(self, converter):

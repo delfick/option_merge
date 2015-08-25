@@ -29,6 +29,13 @@ class DataPath(object):
         self.data = data
         self.source = source
 
+    @property
+    def is_dict(self):
+        is_dict = getattr(self, "_is_dict", None)
+        if is_dict is None:
+            is_dict = self._is_dict = type(self.data) in (dict, VersionedDict, MergedOptions) or isinstance(self.data, dict)
+        return is_dict
+
     def items(self, prefix, want_one=False):
         """
         Yield (key, data, short_path) triplets for after this prefix
@@ -151,7 +158,7 @@ class Storage(object):
             if callable(info.source):
                 source = info.source()
 
-            if info.path == path and not isinstance(info.data, dict):
+            if info.path == path and not info.is_dict:
                 if isinstance(source, list):
                     return list(source)
                 elif source:
@@ -286,12 +293,12 @@ class Storage(object):
             except NotFound:
                 pass
 
-            if not isinstance(info.data, dict):
+            if not info.is_dict:
                 stopped.add(dot_joiner(info.path))
 
     def delete_from_data(self, data, path):
         """Delete this path from the data"""
-        if not path or not isinstance(data, dict):
+        if not path or (type(data) not in (dict, VersionedDict, MergedOptions) and not isinstance(data, dict)):
             return False
 
         keys = list(reversed(sorted(data.keys())))

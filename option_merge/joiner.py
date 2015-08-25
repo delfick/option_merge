@@ -45,7 +45,7 @@ def dot_join_item(item, item_type):
         if part:
             result.append(part)
 
-    return '.'.join(result)
+    return '.'.join(str(part) for part in result)
 
 def join(one, two):
     """
@@ -62,19 +62,16 @@ def join(one, two):
     if isinstance(two, Path):
         two = two.path
 
-    if not two:
-        return one
-    if not one:
-        return two
-
     if isinstance(one, six.string_types):
         if isinstance(two, six.string_types):
-            return [one] + [two]
+            joined = [one] + [two]
         else:
-            return [one] + two
+            joined = [one] + two
     else:
         if isinstance(two, six.string_types):
-            return one + [two]
+            joined = one + [two]
         else:
-            return one + two
+            joined = one + two
+
+    return [item for item in joined if item]
 

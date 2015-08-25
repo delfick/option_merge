@@ -282,7 +282,7 @@ class Storage(object):
                 continue
 
             try:
-                for key in info.keys_after(path):
+                for key in info.keys_after(Path.convert(path)):
                     if path:
                         joined = dot_joiner([path, key], list)
                     else:

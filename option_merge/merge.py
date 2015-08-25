@@ -223,9 +223,9 @@ class MergedOptions(dict, Mapping):
         """Equal to another merged options if has same storage and prefix"""
         return isinstance(other, self.__class__) and other.storage is self.storage and other.prefix_list == self.prefix_list
 
-    def values_for(self, path, converters=None, ignore_converters=False):
+    def values_for(self, path, ignore_converters=False):
         """Get all known values for some path"""
-        path = self.converted_path(path, converters=converters, ignore_converters=ignore_converters or getattr(path, "ignore_converters", False))
+        path = self.converted_path(path, ignore_converters=ignore_converters or getattr(path, "ignore_converters", False))
         if not path.ignore_converters and not path.waiting():
             if path.converted():
                 yield path.converted_val(), True

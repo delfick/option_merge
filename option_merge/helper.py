@@ -3,26 +3,6 @@ from option_merge.merge import MergedOptions
 from option_merge.joiner import dot_joiner
 from option_merge.path import Path
 
-def without_prefix(path, prefix=""):
-    """
-    Remove the prefix from a path
-
-    If the prefix isn't on this path, just return the path itself
-    """
-    if hasattr(path, 'without'):
-        return path.without(prefix)
-
-    if not prefix or not path:
-        return path
-
-    if prefix == path:
-        return ""
-
-    if path.startswith("{0}.".format(prefix)):
-        return path[len(prefix)+1:]
-
-    return path
-
 def prefixed_path_list(path, prefix=None):
     """Return the prefixed version of this path as a list"""
     if isinstance(path, Path):

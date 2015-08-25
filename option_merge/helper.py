@@ -1,23 +1,14 @@
 from option_merge.versioning import VersionedDict
 from option_merge.merge import MergedOptions
 from option_merge.joiner import dot_joiner
-from option_merge.path import Path
 
 def prefixed_path_list(path, prefix=None):
     """Return the prefixed version of this path as a list"""
-    if isinstance(path, Path):
-        res_type = Path
-        if prefix:
-            res = path.prefixed(prefix)
-        else:
-            res = path.clone()
+    res_type = type(path)
+    if prefix:
+        res = prefix + path
     else:
-        if prefix:
-            res = prefix + path
-            res_type = type(res)
-        else:
-            res = list(path)
-            res_type = list
+        res = list(path)
     return res, dot_joiner(res, res_type)
 
 def prefixed_path_string(path, prefix=""):

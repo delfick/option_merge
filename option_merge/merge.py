@@ -11,7 +11,7 @@ With the ability to delete from the dictionary and the ability to convert values
 on access.
 """
 
-from option_merge.versioning import versioned_iterable
+from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
 from option_merge.converter import Converters
 from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
@@ -160,6 +160,7 @@ class MergedOptions(dict, Mapping):
         if options is None: return
         self.storage.add(Path(self.prefix_list), options, source=source)
 
+    @versioned_value
     def __getitem__(self, path, ignore_converters=False):
         """
         Access some path
@@ -223,6 +224,7 @@ class MergedOptions(dict, Mapping):
         """Equal to another merged options if has same storage and prefix"""
         return isinstance(other, self.__class__) and other.storage is self.storage and other.prefix_list == self.prefix_list
 
+    @versioned_iterable
     def values_for(self, path, ignore_converters=False):
         """Get all known values for some path"""
         path = self.converted_path(path, ignore_converters=ignore_converters or getattr(path, "ignore_converters", False))

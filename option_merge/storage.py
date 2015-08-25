@@ -210,6 +210,7 @@ class Storage(object):
         else:
             return -1
 
+    @versioned_iterable
     def get_info(self, path, ignore_converters=False, chain=None):
         """Yield DataPath objects for this path in the data"""
         yielded = False

@@ -318,8 +318,10 @@ class Storage(object):
         """Return this path as a single dictionary"""
         result = {}
         if seen is None:
-            seen = defaultdict(list)
+            seen = {}
 
+        if path not in seen:
+            seen[path] = []
         if self in seen[path]:
             return {}
         seen[path].append(self)

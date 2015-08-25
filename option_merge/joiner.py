@@ -10,13 +10,10 @@ string_types = (str, ) + six.string_types
 
 def dot_joiner(item, item_type=None):
     """Join lists of list of strings with a single dot in between each"""
-    if item:
-        if item_type in string_types:
-            return item
-        else:
-            return dot_join_item(item, item_type or type(item))
+    if item_type in string_types:
+        return item
     else:
-        return ""
+        return dot_join_item(item, item_type or type(item))
 
 def dot_join_item(item, item_type):
     """
@@ -26,26 +23,21 @@ def dot_join_item(item, item_type):
 
     This is fine, as long as we are consistent
     """
-    result = []
-    joined = getattr(item, "joined", None)
-    if joined is not None:
-        return joined()
-
-    if item_type not in (list, tuple):
+    if item_type not in list_types:
         return str(item)
 
+    result = []
     for part in item:
         part_type = type(part)
         global Path
         if Path is None:
             from option_merge.path import Path
-        if part_type not in string_types:
-            joined = getattr(part, "joined", None)
-            if joined is not None:
-                part = joined()
-                if part:
-                    result.append(part)
-                continue
+
+        if part_type is Path:
+            joined = part.joined()
+            if joined:
+                result.append(joined)
+            continue
 
         if part_type in list_types:
             part = ''.join(part)

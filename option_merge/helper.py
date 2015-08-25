@@ -1,9 +1,6 @@
 from option_merge.joiner import dot_joiner
 from option_merge.path import Path
 
-class NotFound(Exception): pass
-"""Used to signify no value was found"""
-
 def without_prefix(path, prefix=""):
     """
     Remove the prefix from a path

@@ -1,5 +1,6 @@
 from option_merge.helper import NotFound, without_prefix
 from option_merge.merge import MergedOptions
+from option_merge.not_found import NotFound
 from option_merge.path import Path
 
 def value_at(data, path, called_from=None, chain=None):

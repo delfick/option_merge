@@ -10,6 +10,7 @@ It is also used to get thesource for particular paths.
 
 from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
 from option_merge.merge import MergedOptions
+from option_merge.not_found import NotFound
 from option_merge.value_at import value_at
 from option_merge.joiner import dot_joiner
 from option_merge import helper as hp
@@ -66,7 +67,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                 return
 
             if type(data) not in (dict, VersionedDict, MergedOptions):
-                raise hp.NotFound
+                raise NotFound
 
             if not prefix:
                 for key in data.keys():
@@ -82,7 +83,7 @@ class DataPath(namedlist("Path", ["path", "data", ("source", None)])):
                     break
 
             if not found:
-                raise hp.NotFound
+                raise NotFound
 
     def keys_after(self, prefix):
         """Yield the keys after this prefix"""
@@ -243,7 +244,7 @@ class Storage(object):
             # We are only part way into info_path
             for key, data, short_path in DataPath(path.using(info_path), data, source).items(path, want_one=True):
                 yield path, "", hp.make_dict(key, short_path, data)
-        except hp.NotFound:
+        except NotFound:
             pass
 
     def make_source_for_function(self, obj, path, chain, default=None):
@@ -276,7 +277,7 @@ class Storage(object):
                         if key not in done:
                             yield key
                             done.add(key)
-            except hp.NotFound:
+            except NotFound:
                 pass
 
             if not isinstance(info.data, dict):
@@ -325,7 +326,7 @@ class Storage(object):
                     path_without_prefix = path.without(prefix)
                 else:
                     path_without_prefix = path
-            except hp.NotFound:
+            except NotFound:
                 continue
 
             val = data
@@ -339,7 +340,7 @@ class Storage(object):
                 try:
                     used, val = value_at(val, path_without_prefix, self)
                     found = True
-                except hp.NotFound:
+                except NotFound:
                     found = False
                     break
 

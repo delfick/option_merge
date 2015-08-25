@@ -7,6 +7,7 @@ as well as whether the converters should be ignored or not.
 """
 
 from option_merge.joiner import dot_joiner, join
+from option_merge.not_found import NotFound
 
 import six
 
@@ -110,8 +111,7 @@ class Path(object):
             base = dot_joiner(base, base_type)
 
         if not self.startswith(base):
-            from option_merge import helper as hp
-            raise hp.NotFound()
+            raise NotFound()
 
         if isinstance(self.path, six.string_types):
             path = self.path[len(base):]

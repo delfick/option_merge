@@ -13,6 +13,7 @@ on access.
 
 from option_merge.versioning import versioned_iterable
 from option_merge.converter import Converters
+from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
 from option_merge import helper as hp
 from option_merge.path import Path
@@ -240,7 +241,7 @@ class MergedOptions(dict, Mapping):
         for info in self.storage.get_info(path):
             try:
                 yield info.value_after(path), False
-            except hp.NotFound:
+            except NotFound:
                 pass
 
     def prefixed(self, path, ignore_converters=False, already_prefixed=False):

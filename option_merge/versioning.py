@@ -8,12 +8,12 @@ class versioned_value(object):
     Where the entire cache is revoked if instance.version changes number
     """
     class NotYet(object): pass
+    class First(object): pass
 
     def __init__(self, func):
         self.func = func
-        self.cached = {}
-        self.value_cache = {}
-        self.expected_version = 0
+        self.cached_key = "_{0}_cached".format(self.func.__name__)
+        self.expected_version_key = "_{0}_expected_version".format(self.func.__name__)
 
     def __get__(self, instance=None, owner=None):
         def returned(*args, **kwargs):
@@ -21,25 +21,43 @@ class versioned_value(object):
             if version is -1:
                 return self.func(instance, *args, **kwargs)
 
-            ignore_converters = kwargs.get('ignore_converters', False)
-
             if args:
                 prefix = str(args[0])
             else:
                 prefix = getattr(instance, "prefix_string", "")
 
-            if version != self.expected_version:
-                self.cached = {}
-                self.expected_version = version
+            # Ignore_converters can be specified in three places, in this order
+            # kwarg to the function
+            # property on the path
+            # property on the instance
+            ignore_converters = kwargs.get('ignore_converters', getattr(prefix, 'ignore_converters', getattr(instance, 'ignore_converters', False)))
 
-            if self.cached.get(prefix, {}).get(ignore_converters, self.NotYet) is self.NotYet:
-                if prefix not in self.cached:
-                    self.cached[prefix] = {}
-                if prefix not in self.value_cache:
-                    self.value_cache[prefix] = {}
+            cached = getattr(instance, self.cached_key, {})
+            expected_version = getattr(instance, self.expected_version_key, self.First)
 
-                self.value_cache[prefix][ignore_converters] = self.func(instance, *args, **kwargs)
-            return self.value_cache[prefix][ignore_converters]
+            if version != expected_version:
+                cached = {}
+                expected_version = version
+
+            # We set the caches on the instance
+            # so that they are garbage collected
+            # When the instance gets deleted
+            setattr(instance, self.cached_key, cached)
+            setattr(instance, self.expected_version_key, expected_version)
+
+            if cached.get(prefix, {}).get(ignore_converters, self.NotYet) is self.NotYet:
+                if prefix not in cached:
+                    cached[prefix] = {}
+                try:
+                    cached[prefix][ignore_converters] = (self.func(instance, *args, **kwargs), False)
+                except KeyError as error:
+                    cached[prefix][ignore_converters] = (error, True)
+
+            val, is_error = cached[prefix][ignore_converters]
+            if is_error:
+                raise val
+            else:
+                return val
         return returned
 
 class versioned_iterable(object):

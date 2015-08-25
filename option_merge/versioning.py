@@ -161,7 +161,7 @@ class VersionedDict(object):
         return self.data == other
 
     def __nonzero__(self):
-        return self.data.__nonzero__()
+        return True if self.data else False
 
     def __bool__(self):
         return bool(self.data)
@@ -169,8 +169,15 @@ class VersionedDict(object):
     def keys(self):
         return self.data.keys()
 
+    @versioned_value
+    def reversed_keys(self):
+        return list(reversed(sorted(self.keys(), key=lambda d: len(str(d)))))
+
     def values(self):
         return self.data.values()
+
+    def update(self, other):
+        self.data.update(other)
 
     def items(self):
         return self.data.items()

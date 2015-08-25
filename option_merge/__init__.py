@@ -5,6 +5,7 @@ from option_merge.not_found import NotFound
 
 # Explicitly make these part of this module
 NotFound = NotFound
+Converter = Converter
 BadPrefix = BadPrefix
 MergedOptions = MergedOptions
 ConverterProperty = ConverterProperty

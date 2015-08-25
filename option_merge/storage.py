@@ -117,7 +117,7 @@ class Storage(object):
     def __init__(self):
         self.data = []
         self.deleted = []
-        self._version = 0
+        self._version = -1
 
     ########################
     ###   USAGE
@@ -196,7 +196,10 @@ class Storage(object):
 
     @property
     def version(self):
-        return [self._version] + [getattr(item, "version", 0) for item in self.data]
+        if self._version > 0:
+            return [self._version] + [getattr(item, "version", 0) for item in self.data]
+        else:
+            return -1
 
     def get_info(self, path, ignore_converters=False, chain=None):
         """Yield DataPath objects for this path in the data"""

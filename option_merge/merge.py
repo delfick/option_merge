@@ -153,10 +153,7 @@ class MergedOptions(dict, Mapping):
 
     @property
     def version(self):
-        if len(self.storage.data) > 2:
-            return self.storage.version
-        else:
-            return -1
+        return self.storage.version
 
     def update(self, options, source=None, **kwargs):
         """Add new options"""

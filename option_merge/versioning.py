@@ -198,6 +198,9 @@ class VersionedDict(object):
     def items(self):
         return self.data.items()
 
+    def get(self, key, dflt=None):
+        return self.data.get(key, dflt)
+
     def __iter__(self):
         return iter(self.data)
 

@@ -38,8 +38,6 @@ class Path(object):
         self.converters = converters
         self.configuration = configuration
         self.ignore_converters = ignore_converters
-        if not self.path:
-            self._joined = ""
 
     def __unicode__(self):
         return self.joined()
@@ -48,7 +46,7 @@ class Path(object):
         return self.joined()
 
     def __nonzero__(self):
-        return bool(self.joined())
+        return any(self.path)
 
     def __len__(self):
         if self.path_is_string:
@@ -112,7 +110,7 @@ class Path(object):
 
         if self.path_is_string:
             path = self.path[len(base):]
-            while path.startswith("."):
+            while path and path[0] == ".":
                 path = path[1:]
             return self.using(path, joined=path)
         else:
@@ -133,7 +131,7 @@ class Path(object):
 
                     if base.startswith(joined_part):
                         base = base[len(joined_part):]
-                        while base.startswith('.'):
+                        while base and base[0] == ".":
                             base = base[1:]
                     elif joined_part.startswith(base):
                         res.append(joined_part[len(base):])
@@ -150,6 +148,12 @@ class Path(object):
 
     def startswith(self, base):
         """Does the path start with this string?"""
+        if self.path_is_string:
+            return self.path.startswith(base)
+        if not self.path:
+            return not bool(base)
+        if self.path_type is list and len(self.path) is 1:
+            return self.path[0].startswith(base)
         return self.joined().startswith(base)
 
     def endswith(self, suffix):
@@ -228,7 +232,10 @@ class Path(object):
             path_type = type(self.path)
             if path_type in (str, ) + six.string_types:
                 self._joined = self.path
+        if joined is None:
+            if self.path_is_string:
+                joined = self._joined = self.path
             else:
-                self._joined = dot_joiner(self.path, path_type)
-        return self._joined
+                joined = self._joined = dot_joiner(self.path, self.path_type)
+        return joined
 

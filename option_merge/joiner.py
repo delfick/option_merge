@@ -3,6 +3,8 @@ Helpers for joining together things
 """
 
 import six
+
+Path = None
 list_types = (list, tuple)
 string_types = (str, ) + six.string_types
 
@@ -34,6 +36,9 @@ def dot_join_item(item, item_type):
 
     for part in item:
         part_type = type(part)
+        global Path
+        if Path is None:
+            from option_merge.path import Path
         if part_type not in string_types:
             joined = getattr(part, "joined", None)
             if joined is not None:
@@ -56,16 +61,19 @@ def join(one, two):
 
     Where either path is either string, list of strings or Path
     """
-    if not two:
-        return one
-    if not one:
-        return two
+    global Path
+    if Path is None:
+        from option_merge.path import Path
 
-    from option_merge.path import Path
     if isinstance(one, Path):
         one = one.path
     if isinstance(two, Path):
         two = two.path
+
+    if not two:
+        return one
+    if not one:
+        return two
 
     if isinstance(one, six.string_types):
         if isinstance(two, six.string_types):

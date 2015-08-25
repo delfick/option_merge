@@ -209,13 +209,7 @@ class Path(object):
         """Find appropriate converter for this path"""
         if self.ignore_converters:
             return None, False
-
-        if self.converters:
-            for converter in self.converters:
-                if not hasattr(converter, "matches") or converter.matches(self):
-                    return converter, True
-
-        return None, False
+        return self.converters.matches(self)
 
     def converted(self):
         """Determine if this path has been converted"""

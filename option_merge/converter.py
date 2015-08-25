@@ -7,6 +7,7 @@ Converter is used to encapsulate a single converter, and converters is used to
 group together multiple converters.
 """
 
+from option_merge.versioning import versioned_value
 from option_merge.joiner import dot_joiner
 
 class Converter(object):
@@ -48,6 +49,7 @@ class Converters(object):
         self._waiting = {}
         self._converted = {}
         self._converters = []
+        self.version = 0
         self.activated = False
 
     def __iter__(self):
@@ -67,6 +69,21 @@ class Converters(object):
     def activate(self):
         """Mark the converters as activated"""
         self.activated = True
+        self.version += 1
+
+    @versioned_value
+    def matches(self, path):
+        """
+        Return (converter, matches) where converter is the matched converter or None
+
+        And matches is a boolean signifying whether there was a match
+        """
+        for converter in self:
+            if not hasattr(converter, "matches") or converter.matches(path):
+                return converter, True
+
+        return None, False
+    matches.debug = True
 
     def converted(self, path):
         """Return whether this path has been converted yet"""

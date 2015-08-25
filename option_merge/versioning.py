@@ -65,7 +65,7 @@ class versioned_iterable(object):
         iterator = cached[prefix][ignore_converters]
         if iterator is self.Finished:
             return
-        ident = cached[prefix][ignore_converters] = uuid.uuid1()
+        ident = cached[prefix][ignore_converters] = "{0}:{1}".format(time.time(), random.random())
 
         try:
             while True:

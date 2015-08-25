@@ -23,10 +23,12 @@ class Path(object):
 
         If already a Path object, then return a clone of the path
         """
-        if hasattr(path, "clone"):
-            return path.clone()
+        path_type = type(path)
+        if path_type is Path:
+            return path
         else:
-            return Path(path, configuration, converters, ignore_converters, joined=joined or (getattr(path, "joined", lambda: None)() if hasattr(path, "joined") else None))
+            joined = dot_joiner(path, item_type=path_type)
+            return Path(path, configuration, converters, ignore_converters, joined=joined)
 
     @classmethod
     def inside(kls, path, lst):

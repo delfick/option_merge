@@ -30,11 +30,14 @@ class Path(object):
             joined = dot_joiner(path, item_type=path_type)
             return Path(path, configuration, converters, ignore_converters, joined=joined)
 
-    def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None):
+    def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None, joined_function=None):
         self.path = path
         self.path_type = type(self.path)
         self.path_is_string = self.path_type in (str, ) + six.string_types
+
         self._joined = joined
+        self._joined_function = joined_function
+
         self.converters = converters
         self.configuration = configuration
         self.ignore_converters = ignore_converters
@@ -170,16 +173,18 @@ class Path(object):
         if path == self.path and self.configuration is configuration and self.converters is converters and self.ignore_converters is ignore_converters:
             return self
 
+        joined_function = None
         if joined is None:
-            if hasattr(path, "joined"):
-                joined = path.joined()
+            if type(path) is Path:
+                joined_function = lambda: dot_joiner(path.path, path.path_type)
             else:
-                joined = dot_joiner(path)
-        return self.__class__(path, configuration, converters, ignore_converters=ignore_converters, joined=joined)
+                joined_function = lambda: dot_joiner(path)
+        return self.__class__(path, configuration, converters, ignore_converters=ignore_converters, joined_function=joined_function)
 
     def clone(self):
         """Return a clone of this path with all the same values"""
-        return self.using(self.path, self.configuration, self.converters, self.ignore_converters)
+        joined_function = lambda: dot_joiner(self.path, self.path_type)
+        return self.__class__(self.path, self.configuration, self.converters, self.ignore_converters, joined_function=joined_function)
 
     def ignoring_converters(self, ignore_converters=True):
         """Return a clone of this path with ignore_converters set to True"""
@@ -228,10 +233,10 @@ class Path(object):
 
     def joined(self):
         """Return the dot_join of of the path"""
-        if self._joined is None:
-            path_type = type(self.path)
-            if path_type in (str, ) + six.string_types:
-                self._joined = self.path
+        joined = self._joined
+        if self._joined is None and self._joined_function is not None:
+            joined = self._joined = self._joined_function()
+
         if joined is None:
             if self.path_is_string:
                 joined = self._joined = self.path

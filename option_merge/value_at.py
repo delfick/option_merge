@@ -42,7 +42,7 @@ def value_at(data, path, called_from=None, chain=None):
             return chain + [path], da
 
     for key in keys:
-        if path.startswith("{0}.".format(key)):
+        if path.first_part_is(key):
             try:
                 if isMergedOptions:
                 prefix = Path.convert(without_prefix(path, key)).ignoring_converters(getattr(path, "ignore_converters", False))

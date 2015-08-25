@@ -149,6 +149,18 @@ class Path(object):
         else:
             return self.using(join(prefix, self))
 
+    def first_part_is(self, key):
+        """Return whether the first part of this path is this string"""
+        if self.path_is_string:
+            return self.path.startswith(key + '.')
+        if not self.path:
+            return not bool(key)
+        if self.path_type is list:
+            return self.path[0] == key
+        if self.path_type is Path:
+            return self.path.first_part_is(key)
+        return self.joined().startswith(key + '.')
+
     def startswith(self, base):
         """Does the path start with this string?"""
         if self.path_is_string:

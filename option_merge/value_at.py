@@ -45,7 +45,6 @@ def value_at(data, path, called_from=None, chain=None):
         if path.first_part_is(key):
             try:
                 if isMergedOptions:
-                prefix = Path.convert(without_prefix(path, key)).ignoring_converters(getattr(path, "ignore_converters", False))
 
                 key = Path.convert(key, None, ignore_converters=Path.convert(path, None).ignore_converters)
 
@@ -57,9 +56,12 @@ def value_at(data, path, called_from=None, chain=None):
                 if storage and called_from is storage:
                     raise NotFound
 
+                prefix = path.without(key)
                 if not prefix:
-                    return chain+[key.path], nxt
-                return value_at(nxt, prefix, called_from, chain=chain+[key.path])
+                    return chain+[key], nxt
+
+                prefix = Path.convert(prefix).ignoring_converters(path.ignore_converters)
+                return value_at(nxt, prefix, called_from, chain=chain+[key])
             except NotFound:
                 pass
 

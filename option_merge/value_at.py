@@ -16,7 +16,7 @@ def value_at(data, path, called_from=None, chain=None):
         return chain, data
 
     data_type = type(data)
-    if data_type not in (dict, VersionedDict, MergedOptions):
+    if data_type not in (dict, VersionedDict, MergedOptions) and getattr(data, "is_dict", False) is not True:
         raise NotFound
 
     joined = path.joined()

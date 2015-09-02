@@ -78,7 +78,7 @@ class DataPath(object):
                 yield "", data, []
                 return
 
-            if type(data) not in (dict, VersionedDict, MergedOptions):
+            if type(data) not in (dict, VersionedDict, MergedOptions) and getattr(data, "is_dict", False) is not True:
                 raise NotFound
 
             if not prefix:

@@ -268,7 +268,6 @@ class MergedOptions(dict, Mapping):
         """Return a MergedOptions with this inside"""
         return self.__class__.using(self, converters=self.converters, dont_prefix=self.dont_prefix)
 
-    @versioned_iterable
     def keys(self, ignore_converters=False):
         """Return a de-duplicated list of the keys we know about"""
         return self.storage.keys_after(self.prefix_string, ignore_converters=ignore_converters)

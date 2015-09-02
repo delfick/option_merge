@@ -50,7 +50,6 @@ describe TestCase, "value_at":
 
     it "skips misleading paths":
         value = mock.Mock(name="value")
-        value2 = mock.Mock(name="value2")
         data = {"blah": {"meh": {"stuff": value}}, "blah.meh": {"tree": 3}}
         self.assertEqual(value_at(data, Path("blah.meh.stuff")), (["blah", "meh", "stuff"], value))
 
@@ -60,3 +59,9 @@ describe TestCase, "value_at":
         data["a"] = data["a"]
         self.assertEqual(value_at(data, Path("a")), (Path("a"), "blah"))
 
+    it "digs into subclasses of dict":
+        class blah(dict):
+            is_dict = True
+        b = blah({"a":1})
+        data = MergedOptions.using({"one": b})
+        self.assertEqual(value_at(data, Path(["one", "a"])), (Path(["one", "a"]), 1))

@@ -163,6 +163,7 @@ class VersionedDict(object):
     def __init__(self, data):
         self.data = data
         self.version = 0
+        self.is_dict = True
         super(VersionedDict, self).__init__()
 
     def __setitem__(self, key, val):

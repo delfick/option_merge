@@ -6,16 +6,19 @@ We are able to use this to store a reference to the root of the configuration
 as well as whether the converters should be ignored or not.
 """
 
+cimport cython
+
 from option_merge.joiner import dot_joiner, join
 from option_merge.not_found import NotFound
 
 import six
 
-class Path(object):
+cdef class Path:
     """
     Encapsulate a path; a root configuration; a list of converters; and whether
     the converters should be used or not
     """
+
     @classmethod
     def convert(kls, path, configuration=None, converters=None, ignore_converters=None, joined=None):
         """
@@ -30,7 +33,7 @@ class Path(object):
             joined = dot_joiner(path, item_type=path_type)
             return Path(path, configuration, converters, ignore_converters, joined=joined)
 
-    def __init__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None, joined_function=None):
+    def __cinit__(self, path, configuration=None, converters=None, ignore_converters=False, joined=None, joined_function=None):
         self.path = path
         self.path_type = type(self.path)
         self.path_is_string = self.path_type in (str, ) + six.string_types
@@ -74,18 +77,20 @@ class Path(object):
     def __repr__(self):
         return "<Path({0})>".format(str(self))
 
-    def __eq__(self, other):
-        joined = self.joined()
-        if not other and not joined:
-            return True
+    def __richcmp__(self, other, cmptype):
+        if cmptype == 2:
+            joined = self.joined()
+            if not other and not joined:
+                return True
 
-        if other and joined:
-            return dot_joiner(other) == self.joined()
+            if other and joined:
+                return dot_joiner(other) == self.joined()
 
-        return False
+            return False
+        elif cmptype == 3:
+            return not self.__richcmp__(other, 2)
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        raise Exception("Sorry, haven't implemented that")
 
     def __add__(self, other):
         if not other:

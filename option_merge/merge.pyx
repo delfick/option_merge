@@ -11,6 +11,9 @@ With the ability to delete from the dictionary and the ability to convert values
 on access.
 """
 
+cimport cython
+from option_merge cimport helper
+
 from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
 from option_merge.converter import Converters
 from option_merge.not_found import NotFound
@@ -32,8 +35,7 @@ class KeyValuePairsConverter(object):
 
     def convert(self):
         """Return us a MergedOptions from our pairs"""
-        from option_merge import helper as hp
-        return MergedOptions().using(*[hp.make_dict(key[0], key[1:], value) for key, value in self.pairs], source=self.source)
+        return MergedOptions().using(*[helper.make_dict(key[0], key[1:], value) for key, value in self.pairs], source=self.source)
 
 class AttributesConverter(object):
     """Converts an object with particular attributes to a dictionary"""
@@ -307,11 +309,10 @@ class MergedOptions(dict, Mapping):
         if isPath:
             joined = path.joined()
         else:
-            from option_merge import helper as hp
             if path_type in (list, tuple):
-                path, joined = hp.prefixed_path_list(path, self.prefix_list)
+                path, joined = helper.prefixed_path_list(path, self.prefix_list)
             else:
-                path, joined = hp.prefixed_path_string(path, self.prefix_string)
+                path, joined = helper.prefixed_path_string(path, self.prefix_string)
 
         return Path.convert(path, self, converters=converters, joined=joined).ignoring_converters(ignore_converters)
 

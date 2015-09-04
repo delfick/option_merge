@@ -1,8 +1,10 @@
+cimport cython
+from option_merge cimport merge
+
 from option_merge.versioning import VersionedDict
-from option_merge.merge import MergedOptions
 from option_merge.joiner import dot_joiner
 
-def prefixed_path_list(path, prefix=None):
+cdef public prefixed_path_list(path, prefix):
     """Return the prefixed version of this path as a list"""
     res_type = type(path)
     if prefix:
@@ -11,7 +13,7 @@ def prefixed_path_list(path, prefix=None):
         res = list(path)
     return res, dot_joiner(res, res_type)
 
-def prefixed_path_string(path, prefix=""):
+cdef public prefixed_path_string(path, prefix):
     """Return the prefixed version of this string"""
     while path and path[0] == '.':
         path = path[1:]
@@ -33,7 +35,7 @@ def prefixed_path_string(path, prefix=""):
         res = "{0}.{1}".format(prefix, path)
         return res, res
 
-def make_dict(first, rest, data):
+cdef public make_dict(first, rest, data):
     """Make a dictionary from a list of keys"""
     last = first
     result = VersionedDict({first: data})
@@ -46,8 +48,10 @@ def make_dict(first, rest, data):
 
     return result
 
-def merge_into_dict(target, source, seen=None, ignore=None):
+cdef public merge_into_dict(target, source, dict seen, list ignore):
     """Merge source into target"""
+    from option_merge import merge
+
     if ignore is None:
         ignore = []
 
@@ -58,10 +62,10 @@ def merge_into_dict(target, source, seen=None, ignore=None):
         if key in ignore:
             continue
 
-        is_dict = lambda item: type(item) in (dict, VersionedDict, MergedOptions) or isinstance(item, dict)
+        is_dict = lambda item: type(item) in (dict, VersionedDict, merge.MergedOptions) or isinstance(item, dict)
         if is_dict(val):
             if not is_dict(target.get(key)):
                 target[key] = VersionedDict({})
-            merge_into_dict(target[key], val, seen=seen)
+            merge_into_dict(target[key], val, seen=seen, ignore=None)
         else:
             target[key] = val

@@ -1,4 +1,8 @@
 *.pyc
+*.so
+*.c
+*.h
+build/
 *~
 .ropeproject/
 *.egg-info/

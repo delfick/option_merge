@@ -1,9 +1,11 @@
+cimport cython
+
 from option_merge.versioning import VersionedDict
 from option_merge.merge import MergedOptions
 from option_merge.not_found import NotFound
 from option_merge.path import Path
 
-def value_at(data, path, called_from=None, chain=None):
+cdef public value_at(data, path, called_from, list chain):
     """
     Return the value at this path
 

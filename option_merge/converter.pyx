@@ -7,10 +7,12 @@ Converter is used to encapsulate a single converter, and converters is used to
 group together multiple converters.
 """
 
+cimport cython
+
 from option_merge.versioning import versioned_value
 from option_merge.joiner import dot_joiner
 
-class Converter(object):
+cdef class Converter:
     """
     Encapsulates a single converter.
 
@@ -20,7 +22,12 @@ class Converter(object):
     It has a method "matches" that is used against each possible path and will
     check for exact matches against the ``convert_path``.
     """
-    def __init__(self, convert, convert_path=None):
+
+    cdef convert
+    cdef convert_path
+    cdef convert_path_joined
+
+    def __cinit__(self, convert, convert_path=None):
         self.convert = convert
         self.convert_path = convert_path
         self.convert_path_joined = dot_joiner(convert_path)
@@ -37,7 +44,7 @@ class Converter(object):
             joined_path = dot_joiner(path)
         return self.convert_path and joined_path == self.convert_path_joined
 
-class Converters(object):
+cdef class Converters:
     """
     Holds a group of converters.
 
@@ -45,6 +52,17 @@ class Converters(object):
 
     Also memoizes the results of conversion.
     """
+
+    cdef dict _waiting
+    cdef dict _converted
+    cdef list _converters
+    cdef int version
+    cdef activated
+
+    cdef public dict _matches_cached
+    cdef public dict _matches_value_cache
+    cdef public _matches_expected_version
+
     def __init__(self):
         self._waiting = {}
         self._converted = {}
@@ -83,7 +101,6 @@ class Converters(object):
                 return converter, True
 
         return None, False
-    matches.debug = True
 
     def converted(self, path):
         """Return whether this path has been converted yet"""

@@ -8,23 +8,37 @@ which can be used to get keys and values for some path.
 It is also used to get thesource for particular paths.
 """
 
+cimport cython
+from option_merge.path cimport Path
+cimport option_merge.value_at
+from option_merge cimport helper
+
 from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
 from option_merge.merge import MergedOptions
 from option_merge.not_found import NotFound
-from option_merge.value_at import value_at
+from option_merge.value_at cimport value_at
 from option_merge.joiner import dot_joiner
-from option_merge import helper as hp
 from option_merge.path import Path
 
 from delfick_error import ProgrammerError
 
-class DataPath(object):
+cdef class DataPath:
     """
     Encapsulates a (path, data, source) triplet and getting keys and values from
     that path in the data.
     """
 
-    def __init__(self, path, data, source=None):
+    cdef public path
+    cdef public data
+    cdef public source
+
+    cdef _is_dict
+
+    cdef public dict _value_after_cached
+    cdef public dict _value_after_value_cache
+    cdef public _value_after_expected_version
+
+    def __cinit__(self, Path path, data, source=None):
         self.path = path
         self.data = data
         self.source = source
@@ -36,7 +50,7 @@ class DataPath(object):
             is_dict = self._is_dict = type(self.data) in (dict, VersionedDict, MergedOptions) or isinstance(self.data, dict)
         return is_dict
 
-    def items(self, prefix, want_one=False):
+    def items(self, Path prefix, want_one=False):
         """
         Yield (key, data, short_path) triplets for after this prefix
         We don't return values to avoid any lazy computations
@@ -57,8 +71,8 @@ class DataPath(object):
             raise NotFound
         """
         data = self.data
-        joined = self.path.joined()
-        joined_prefix = prefix.joined()
+        cdef str joined = self.path.joined()
+        cdef str joined_prefix = prefix.joined()
 
         if not prefix or joined == joined_prefix or joined.startswith(joined_prefix + '.'):
             shortened_path = self.path.without(prefix)
@@ -66,7 +80,7 @@ class DataPath(object):
                 yield list(shortened_path)[0], data, list(shortened_path)[1:]
                 return
             else:
-                prefix = ""
+                prefix = Path("")
         else:
             if not joined_prefix.startswith(joined):
                 raise NotFound
@@ -97,24 +111,24 @@ class DataPath(object):
             if not found:
                 raise NotFound
 
-    def keys_after(self, prefix):
+    def keys_after(self, Path prefix):
         """Yield the keys after this prefix"""
         for key, _, _ in self.items(prefix):
             yield key
 
     @versioned_value
-    def value_after(self, prefix):
+    def value_after(self, Path prefix):
         """Returns the value after prefix"""
         for key, data, short_path in self.items(prefix, want_one=True):
             if short_path:
-                return hp.make_dict(key, short_path, data)
+                return helper.make_dict(key, short_path, data)
             else:
                 if key:
-                    return hp.make_dict(key, short_path, data)
+                    return helper.make_dict(key, short_path, data)
                 else:
                     return data
 
-class Storage(object):
+cdef class Storage:
     """
     Holds the data used by MergedOptions.
 
@@ -123,7 +137,23 @@ class Storage(object):
     how to get the sources for particular paths.
     """
 
-    def __init__(self):
+    cdef list data
+    cdef list deleted
+    cdef public int _version
+
+    cdef public dict _get_info_cached
+    cdef public dict _get_info_value_cache
+    cdef public _get_info_expected_version
+
+    cdef public dict _keys_after_cached
+    cdef public dict _keys_after_value_cache
+    cdef public _keys_after_expected_version
+
+    cdef public dict _value_after_cached
+    cdef public dict _value_after_value_cache
+    cdef public _value_after_expected_version
+
+    def __cinit__(self):
         self.data = []
         self.deleted = []
         self._version = -1
@@ -246,20 +276,20 @@ class Storage(object):
 
         try:
             if not info_path:
-                found_path, val = value_at(data, Path.convert(path), self)
+                found_path, val = value_at(data, Path.convert(path), self, None)
                 yield info_path + found_path, dot_joiner(found_path, list), val
                 return
 
             if joined_path.startswith(joined_info_path + '.'):
                 get_at = Path.convert(path).without(info_path)
-                found_path, val = value_at(data, get_at, self)
+                found_path, val = value_at(data, get_at, self, None)
                 yield info_path + found_path, dot_joiner(found_path), val
                 return
 
             # We are only part way into info_path
             path = Path.convert(path)
             for key, data, short_path in DataPath(Path.convert(info_path), data, source).items(path, want_one=True):
-                yield path, "", hp.make_dict(key, short_path, data)
+                yield path, "", helper.make_dict(key, short_path, data)
         except NotFound:
             pass
 
@@ -315,9 +345,9 @@ class Storage(object):
                 if self.delete_from_data(data[key], Path.convert(path).without(key)):
                     return True
 
-    def as_dict(self, path, seen=None, ignore=None):
+    def as_dict(self, path, dict seen=None, ignore=None):
         """Return this path as a single dictionary"""
-        result = {}
+        cdef dict result = {}
         if seen is None:
             seen = {}
 
@@ -346,7 +376,7 @@ class Storage(object):
                     path_without_prefix = ""
 
                 try:
-                    used, val = value_at(val, path_without_prefix, self)
+                    used, val = value_at(val, path_without_prefix, self, None)
                     found = True
                 except NotFound:
                     found = False
@@ -362,7 +392,7 @@ class Storage(object):
                 else:
                     if not is_dict(result):
                         result = {}
-                    hp.merge_into_dict(result, val, seen, ignore=ignore)
+                    helper.merge_into_dict(result, val, seen, ignore=ignore)
 
         return result
 

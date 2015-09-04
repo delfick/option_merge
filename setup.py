@@ -1,10 +1,22 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+from Cython.Distutils import build_ext
+
+path = Extension("option_merge.path", ["option_merge/path.pyx"])
+merge = Extension("option_merge.merge", ["option_merge/merge.pyx"])
+helper = Extension("option_merge.helper", ["option_merge/helper.pyx"])
+storage = Extension("option_merge.storage", ["option_merge/storage.pyx"])
+value_at = Extension("option_merge.value_at", ["option_merge/value_at.pyx"])
+converter = Extension("option_merge.converter", ["option_merge/converter.pyx"])
+versioning = Extension("option_merge.versioning", ["option_merge/versioning.pyx"])
 
 setup(
       name = "option_merge"
     , version = "0.9.9.1"
     , packages = ['option_merge'] + ['option_merge.%s' % pkg for pkg in find_packages('option_merge')]
     , include_package_data = True
+
+    , cmdclass = {"build_ext": build_ext}
+    , ext_modules = [versioning, path, value_at, storage, helper, merge, converter]
 
     , install_requires =
       [ 'six'

@@ -1,21 +1,26 @@
+cimport cython
 import random
 import time
 
-class versioned_value(object):
+cdef class versioned_value:
     """
     A property that holds a cache of {prefix: {ignore_converters: value}}
 
     Where the entire cache is revoked if instance.version changes number
     """
-    class NotYet(object): pass
-    class First(object): pass
+    NotYet = type("NotYet", (), {})
+    First = type("First", (), {})
 
-    def __init__(self, func):
+    cdef func
+    cdef str cached_key
+    cdef str expected_version_key
+
+    def __cinit__(self, func):
         self.func = func
         self.cached_key = "_{0}_cached".format(self.func.__name__)
         self.expected_version_key = "_{0}_expected_version".format(self.func.__name__)
 
-    def __get__(self, instance=None, owner=None):
+    def __get__(self, instance, owner):
         def returned(*args, **kwargs):
             version = getattr(instance, "version", 0)
             if version is -1:
@@ -60,23 +65,28 @@ class versioned_value(object):
                 return val
         return returned
 
-class versioned_iterable(object):
+cdef class versioned_iterable:
     """
     A property that holds a cache of {instance: {prefix: {ignore_converters: iterator}}}
 
     Where the entire cache is revoked if instance.version changes number
     """
-    class First(object): pass
-    class NotYet(object): pass
-    class Finished(object): pass
+    First = type("First", (), {})
+    NotYet = type("NotYet", (), {})
+    Finished = type("Finished", (), {})
 
-    def __init__(self, func):
+    cdef func
+    cdef str cached_key
+    cdef str value_cache_key
+    cdef str expected_version_key
+
+    def __cinit__(self, func):
         self.func = func
         self.cached_key = "_{0}_cached".format(self.func.__name__)
         self.value_cache_key = "_{0}_value_cache".format(self.func.__name__)
         self.expected_version_key = "_{0}_expected_version".format(self.func.__name__)
 
-    def iterator_for(self, instance, prefix, ignore_converters, cached, value_cache):
+    def iterator_for(self, instance, prefix, int ignore_converters, dict cached, dict value_cache):
         for item in value_cache[prefix][ignore_converters]:
             yield item
 
@@ -96,7 +106,7 @@ class versioned_iterable(object):
             if cached.get(prefix, {}).get(ignore_converters) == ident:
                 cached[prefix][ignore_converters] = self.Finished
 
-    def __get__(self, instance=None, owner=None):
+    def __get__(self, instance, owner):
         def returned(*args, **kwargs):
 
             version = getattr(instance, "version", 0)
@@ -114,8 +124,8 @@ class versioned_iterable(object):
             # property on the instance
             ignore_converters = kwargs.get('ignore_converters', getattr(prefix, 'ignore_converters', getattr(instance, 'ignore_converters', False)))
 
-            cached = getattr(instance, self.cached_key, {})
-            value_cache = getattr(instance, self.value_cache_key, {})
+            cdef dict cached = getattr(instance, self.cached_key, {})
+            cdef dict value_cache = getattr(instance, self.value_cache_key, {})
             expected_version = getattr(instance, self.expected_version_key, self.First)
 
             if version != expected_version:
@@ -146,12 +156,20 @@ class versioned_iterable(object):
             return self.iterator_for(instance, prefix, ignore_converters, cached, value_cache)
         return returned
 
-class VersionedDict(object):
+cdef class VersionedDict:
     """
     A wrapper for dictionaries that has a version property
 
     The version starts at 0 and is incremented whenever __setitem__ or __delitem__ is used
     """
+
+    cdef data
+    cdef int version
+    cdef int is_dict
+    cdef public dict _reversed_keys_cached
+    cdef public dict _reversed_keys_value_cache
+    cdef public int _reversed_keys_expected_version
+
     @classmethod
     def convert(kls, item):
         from option_merge import MergedOptions
@@ -160,11 +178,13 @@ class VersionedDict(object):
                 return kls(item)
         return item
 
-    def __init__(self, data):
+    def __cinit__(self, data):
         self.data = data
         self.version = 0
         self.is_dict = True
-        super(VersionedDict, self).__init__()
+        self._reversed_keys_cached = {}
+        self._reversed_keys_value_cache = {}
+        self._reversed_keys_expected_version = 0
 
     def __setitem__(self, key, val):
         self.version += 1
@@ -174,8 +194,12 @@ class VersionedDict(object):
         self.version += 1
         del self.data[key]
 
-    def __eq__(self, other):
-        return self.data == other
+    def __richcmp__(self, other, cmptype):
+        if cmptype == 2:
+            return self.data == other
+        elif cmptype == 3:
+            return self.data != other
+        raise Exception("Sorry, haven't implemented that...")
 
     def __nonzero__(self):
         return True if self.data else False

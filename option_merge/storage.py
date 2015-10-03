@@ -341,9 +341,12 @@ class Storage(object):
             found = False
             path_without_prefix = path
             while not found or path_without_prefix:
-                if hasattr(data, "as_dict"):
-                    val = val.as_dict(path_without_prefix, seen=seen, ignore=ignore)
-                    path_without_prefix = ""
+                if hasattr(data, "is_dict") and data.is_dict:
+                    if hasattr(val, "as_dict"):
+                        val = val.as_dict(path_without_prefix, seen=seen, ignore=ignore)
+                        path_without_prefix = ""
+                    else:
+                        val = dict(val)
 
                 try:
                     used, val = value_at(val, path_without_prefix, self)

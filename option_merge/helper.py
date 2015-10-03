@@ -51,8 +51,11 @@ def merge_into_dict(target, source, seen=None, ignore=None):
     if ignore is None:
         ignore = []
 
-    if hasattr(source, "as_dict"):
-        source = source.as_dict(seen=seen, ignore=ignore)
+    if hasattr(source, "is_dict") and source.is_dict:
+        if hasattr(source, "as_dict"):
+            source = source.as_dict(seen=seen, ignore=ignore)
+        else:
+            source = dict(source)
 
     for key, val in source.items():
         if key in ignore:
@@ -61,7 +64,7 @@ def merge_into_dict(target, source, seen=None, ignore=None):
         is_dict = lambda item: type(item) in (dict, VersionedDict, MergedOptions) or isinstance(item, dict)
         if is_dict(val):
             if not is_dict(target.get(key)):
-                target[key] = VersionedDict({})
+                target[key] = {}
             merge_into_dict(target[key], val, seen=seen)
         else:
             target[key] = val

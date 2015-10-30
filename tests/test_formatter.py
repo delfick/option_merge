@@ -142,6 +142,18 @@ describe TestCase, "MergedOptionStringFormatter":
 
             special_format_field.assert_called_once_with(obj, format_spec)
 
+        it "returns the object if it's a mock":
+            obj = mock.Mock(name="obj")
+
+            format_spec = mock.Mock(name="format_spec")
+            special_format_field = mock.Mock(name="special_format_field", return_value=None)
+
+            formatter = MergedOptionStringFormatter(self.all_options, self.option_path)
+            with mock.patch.object(formatter, "special_format_field", special_format_field):
+                self.assertIs(formatter.format_field(obj, format_spec), obj)
+
+            special_format_field.assert_called_once_with(obj, format_spec)
+
         it "returns the obj if it's a lambda or function or method":
             class blah(dict):
                 def method(self): pass

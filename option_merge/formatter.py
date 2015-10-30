@@ -62,7 +62,11 @@ class MergedOptionStringFormatter(string.Formatter):
         if special:
             return special
         else:
-            if type(obj) in (VersionedDict, MergedOptions) or isinstance(obj, dict) or any(isinstance(obj, typ) for typ in (types.LambdaType, types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.BuiltinMethodType)):
+            is_dict = type(obj) in (VersionedDict, MergedOptions) or isinstance(obj, dict)
+            is_a_mock = hasattr(obj, 'mock_calls')
+            is_special_type = any(isinstance(obj, typ) for typ in (types.LambdaType, types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.BuiltinMethodType))
+
+            if is_dict or is_special_type or is_a_mock:
                 return obj
             else:
                 return super(MergedOptionStringFormatter, self).format_field(obj, format_spec)

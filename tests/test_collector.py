@@ -33,24 +33,24 @@ describe TestCase, "Collector":
     describe "Cloning":
         it "returns an instance that has rerun collect_configuration and prepare":
             called = []
-            original_cli_args = {'a': 1, "b": 2}
+            original_args_dict = {'a': 1, "b": 2}
             with self.fake_config() as (config_root, config_file):
                 class Col(Collector):
                     def start_configuration(self): return MergedOptions.using({})
                     def read_file(self, location): return json.load(open(location))
                     def add_configuration(self, configuration, collect_another_source, done, result, src): configuration.update(result)
 
-                    def alter_clone_cli_args(slf, nw_cllctr, nw_cli_args, new_args):
-                        nw_cli_args.update(new_args)
-                        called.append((1, nw_cllctr, nw_cli_args))
+                    def alter_clone_args_dict(slf, nw_cllctr, nw_args_dict, new_args):
+                        nw_args_dict.update(new_args)
+                        called.append((1, nw_cllctr, nw_args_dict))
 
                 collector = Col()
-                collector.prepare(config_file, original_cli_args)
-                self.assertEqual(collector.configuration["cli_args"].as_dict(), original_cli_args)
+                collector.prepare(config_file, original_args_dict)
+                self.assertEqual(collector.configuration["args_dict"].as_dict(), original_args_dict)
 
             class MockCollectorKls(Col):
-                def prepare(slf, config_file, new_cli_args):
-                    called.append((2, (config_file, new_cli_args)))
+                def prepare(slf, config_file, new_args_dict):
+                    called.append((2, (config_file, new_args_dict)))
 
             collector.__class__ = MockCollectorKls
 
@@ -61,7 +61,7 @@ describe TestCase, "Collector":
                   , (2, (config_file, {"a": 1, "b": 4, "c": 3}))
                   ]
                 )
-            self.assertEqual(original_cli_args, {"a": 1, "b": 2})
+            self.assertEqual(original_args_dict, {"a": 1, "b": 2})
 
     describe "prepare":
         it "find_missing_config, updates configuration, does extra_prepare, activates converters and extra_prepare_after_activation":
@@ -77,28 +77,28 @@ describe TestCase, "Collector":
                         self.assertEqual(config.as_dict(), {"config_root": config_root, "one": 1})
                         config.converters = mock.Mock(name="converters")
 
-                    def extra_prepare(slf, config, cli_args):
-                        called.append((2, config, cli_args))
+                    def extra_prepare(slf, config, args_dict):
+                        called.append((2, config, args_dict))
                         self.assertEqual(config.as_dict()
                             , { "getpass": getpass
                               , "collector": slf
-                              , "cli_args": cli_args
+                              , "args_dict": args_dict
                               , "config_root": config_root
                               , "one": 1
                               }
                             )
                         self.assertEqual(len(config.converters.mock_calls), 0)
 
-                    def extra_prepare_after_activation(slf, config, cli_args):
-                        called.append((3, config, cli_args))
+                    def extra_prepare_after_activation(slf, config, args_dict):
+                        called.append((3, config, args_dict))
                         config.converters.activate.assert_called_once_with()
 
                 collector = Col()
                 self.assertEqual(called, [])
 
-                cli_args = mock.Mock(name="cli_args")
-                collector.prepare(config_file, cli_args)
-                self.assertEqual(called, [(1, collector.configuration), (2, collector.configuration, cli_args), (3, collector.configuration, cli_args)])
+                args_dict = mock.Mock(name="args_dict")
+                collector.prepare(config_file, args_dict)
+                self.assertEqual(called, [(1, collector.configuration), (2, collector.configuration, args_dict), (3, collector.configuration, args_dict)])
 
     describe "Collecting configuration":
         it "uses start_configuration, read_file, home_dir_configuration, config_file, add_configuration and extra_configuration_collection":

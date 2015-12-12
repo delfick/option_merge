@@ -65,7 +65,7 @@ class Converters(object):
     def append(self, converter):
         """Add a converter, we store these as a list"""
         self._converters.append(converter)
-        self._version += 1
+        self.version += 1
 
     def activate(self):
         """Mark the converters as activated"""

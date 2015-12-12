@@ -20,16 +20,16 @@ class Collector(object):
     ###   HOOKS
     ########################
 
-    def alter_clone_cli_args(self, new_collector, new_cli_args, *args, **kwargs):
-        """Hook for altering cli_args given to a clone collector"""
+    def alter_clone_args_dict(self, new_collector, new_args_dict, *args, **kwargs):
+        """Hook for altering args_dict given to a clone collector"""
 
     def find_missing_config(self, configuration):
         """Hook to raise errors about missing configuration"""
 
-    def extra_prepare(self, configuration, cli_args):
+    def extra_prepare(self, configuration, args_dict):
         """Hook for any extra preparation before the converters are activated"""
 
-    def extra_prepare_after_activation(self, configuration, cli_args):
+    def extra_prepare_after_activation(self, configuration, args_dict):
         """Hook for any extra preparation after the converters are activated"""
 
     def home_dir_configuration_location(self):
@@ -65,12 +65,12 @@ class Collector(object):
         if not hasattr(self, "configuration_file"):
             return self.__class__()
         new_collector = self.__class__()
-        new_cli_args = dict(self.configuration["cli_args"].items())
-        self.alter_clone_cli_args(new_collector, new_cli_args, *args, **kwargs)
-        new_collector.prepare(self.configuration_file, new_cli_args)
+        new_args_dict = dict(self.configuration["args_dict"].items())
+        self.alter_clone_args_dict(new_collector, new_args_dict, *args, **kwargs)
+        new_collector.prepare(self.configuration_file, new_args_dict)
         return new_collector
 
-    def prepare(self, configuration_file, cli_args):
+    def prepare(self, configuration_file, args_dict):
         """Do the bespin stuff"""
         self.configuration_file = configuration_file
         self.configuration = self.collect_configuration(configuration_file)
@@ -80,14 +80,14 @@ class Collector(object):
         self.configuration.update(
             { "getpass": getpass
             , "collector": self
-            , "cli_args": cli_args
+            , "args_dict": args_dict
             }
         , source = "<preparation>"
         )
 
-        self.extra_prepare(self.configuration, cli_args)
+        self.extra_prepare(self.configuration, args_dict)
         self.configuration.converters.activate()
-        self.extra_prepare_after_activation(self.configuration, cli_args)
+        self.extra_prepare_after_activation(self.configuration, args_dict)
 
     ########################
     ###   CONFIG

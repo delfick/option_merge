@@ -12,14 +12,17 @@ on access.
 """
 
 from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
-from option_merge.converter import Converters
+from option_merge.converter import Converters, Converter
 from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
 from option_merge.path import Path
 
 from delfick_error import DelfickError
 from collections import Mapping
+import logging
 import six
+
+log = logging.getLogger("option_merge.merge")
 
 class BadPrefix(DelfickError): pass
 """Used to say a prefix value is not a dictionary"""
@@ -319,6 +322,11 @@ class MergedOptions(dict, Mapping):
         """Add a converter to our collection"""
         if converter not in self.converters:
             self.converters.append(converter)
+
+    def install_converters(self, converters, make_converter):
+        for name, spec in converters.items():
+            convert = make_converter(name, spec)
+            self.add_converter(Converter(convert=convert, convert_path=[name]))
 
     def as_dict(self, key="", ignore_converters=True, seen=None, ignore=None):
         """Return this key as a single dictionary"""

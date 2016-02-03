@@ -57,14 +57,15 @@ def merge_into_dict(target, source, seen=None, ignore=None):
         else:
             source = dict(source)
 
-    for key, val in source.items():
+    for key in source.keys():
         if key in ignore:
             continue
+        val = source[key]
 
         is_dict = lambda item: type(item) in (dict, VersionedDict, MergedOptions) or isinstance(item, dict)
         if is_dict(val):
             if not is_dict(target.get(key)):
                 target[key] = {}
-            merge_into_dict(target[key], val, seen=seen)
+            merge_into_dict(target[key], val, seen=seen, ignore=ignore)
         else:
             target[key] = val

@@ -71,6 +71,13 @@ class MergedOptionStringFormatter(string.Formatter):
             else:
                 return super(MergedOptionStringFormatter, self).format_field(obj, format_spec)
 
+    def vformat(self, format_string, args, kwargs):
+        """This changes in 3.5.1 and I want it to not have changed"""
+        used_args = set()
+        result = self._vformat(format_string, args, kwargs, used_args, 2)
+        self.check_unused_args(used_args, args, kwargs)
+        return result
+
     def _vformat(self, format_string, args, kwargs, used_args, recursion_depth):
         """I really want to know what the format_string is so I'm taking from standard library string and modifying slightly"""
         if recursion_depth < 0:

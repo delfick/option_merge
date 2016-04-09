@@ -1,0 +1,5 @@
+.. _collector:
+
+Collector
+=========
+

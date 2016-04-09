@@ -28,6 +28,9 @@ And a separate override with `__setitem__` syntax:
     options['a'] = 1
     options['b.c'] = 2
     options['b']['d'] = 3
+    options[['b', 'e']] = 4
+
+    options.as_dict() == {"a": 1, "b.c": 2, "b": {"d": 3, "e": 4}}
 
 When options are added, copies are made.
 

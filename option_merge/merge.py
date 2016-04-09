@@ -115,7 +115,26 @@ class MergedOptions(dict, Mapping):
     """
 
     Attributes = ConverterProperty(AttributesConverter)
+    """
+    This is way of extracting attributes from an object and creating a
+    MergedOptions from that:
+
+    .. code-block:: python
+
+        obj = type("obj", (object, ), {"one": "two", "two": "three", "four": "five"})
+        result = MergedOptions.Attributes(obj, ("one", "four"), lift="global")
+        assertEqual(as_dict(), {"global": {"one": "two", "four": "five"}})
+    """
+
     KeyValuePairs = ConverterProperty(KeyValuePairsConverter)
+    """
+    This allows us to create a MergedOptions from (key, value) pairs.
+
+    .. code-block:: python
+
+        result = MergedOptions.KeyValuePairs([(["one"], "two"), (["three", "four"], "five")])
+        assertEqual(result.as_dict(), {"one": "two", "three": {"four": "five"}})
+    """
 
     def __init__(self, prefix=None, storage=None, dont_prefix=None, converters=None, ignore_converters=False):
         self.prefix_list = prefix
@@ -139,7 +158,24 @@ class MergedOptions(dict, Mapping):
 
     @classmethod
     def using(cls, *options, **kwargs):
-        """Convenience for calling update multiple times"""
+        """
+        Convenience for calling update multiple times
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": 1}, {"b": 2})
+
+        is equivalent to:
+
+        .. code-block:: python
+
+            m = MergedOptions()
+            m.update({"a": 1})
+            m.update({"b": 2})
+
+        Any kwargs given to ``using`` is passed into ``update`` for
+        each provided dictionary.
+        """
         prefix = kwargs.get('prefix')
         storage = kwargs.get('storage')
         converters = kwargs.get('converters')
@@ -159,7 +195,11 @@ class MergedOptions(dict, Mapping):
         return self.storage.version
 
     def update(self, options, source=None, **kwargs):
-        """Add new options"""
+        """
+        Add new options to the storage under this prefix.
+
+        The later options are added, the more influence they have.
+        """
         if options is None: return
         self.storage.add(Path(self.prefix_list), options, source=source)
 
@@ -169,7 +209,15 @@ class MergedOptions(dict, Mapping):
         Access some path
 
         Return the first value it comes across
+
         Raise KeyError if nothing has the specified key
+
+        for example:
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": {"b": 2}})
+            assert m['a.b'] == 2
         """
         path = self.converted_path(path, ignore_converters=ignore_converters or self.ignore_converters or getattr(path, "ignore_converters", False))
         for val, return_as_is in self.values_for(path, ignore_converters=path.ignore_converters):
@@ -186,7 +234,16 @@ class MergedOptions(dict, Mapping):
         raise KeyError(path)
 
     def __contains__(self, path):
-        """Ask storage if it has a path"""
+        """
+        Ask storage if it has a path
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": 1})
+
+            assert "a" in m
+            assert "b" not in m
+        """
         try:
             self.storage.get(self.converted_path(path))
             return True
@@ -194,25 +251,78 @@ class MergedOptions(dict, Mapping):
             return False
 
     def get(self, path, default=None, ignore_converters=False):
-        """Get some path or return default value"""
+        """
+        Get some path or return default value
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": 1})
+
+            assert m.get("a") == 1
+            assert m.get("b") == None
+            assert m.get("b", 2) == 2
+
+        You may also specify ``ignore_converters`` and it won't take the
+        the converters into account.
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": 1})
+            m.add_converter(Converter(convert=add_one, convert_path=["a"]))
+            m.converters.activate()
+
+            assert m["a"] == 2
+            assert m.get("a", ignore_converters=True) == 1
+        """
         try:
             return self.__getitem__(path, ignore_converters=ignore_converters)
         except KeyError:
             return default
 
     def source_for(self, path, chain=None):
-        """Proxy self.storage.source_for"""
+        """
+        Proxy self.storage.source_for
+
+        Source is specifying in calls to ``__init__`` and ``update`` and this
+        will find the entries for the specified path an return the first source
+        it finds.
+        """
         path = Path.convert(path, self).ignoring_converters(True)
         return self.storage.source_for(path, chain)
 
     def __setitem__(self, path, value):
-        """Set a key in the storage"""
+        """
+        Set a key in the storage
+
+        This takes into account the prefix on this option as well as the provided
+        path.
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": 1})
+            assertEqual(m.as_dict(), {"a": 1})
+
+            a = m["a"]
+            a['b'] = 2
+
+            assertEqual(m.as_dict(), {"a": 1, "b": 2})
+        """
         if isinstance(path, six.string_types):
             path = [path]
         self.storage.add(self.converted_path(path), value)
 
     def __delitem__(self, path):
-        """Delete a key from the storage"""
+        """
+        Delete a key from the storage
+
+        .. code-block:: python
+
+            m = MergedOptions.using({"a": 1}, {"a": 2})
+            assert m['a'] == 2
+
+            del m['a']
+            assert m['a'] == 1
+        """
         self.storage.delete(self.converted_path(path))
 
     def __iter__(self):
@@ -258,7 +368,7 @@ class MergedOptions(dict, Mapping):
             )
 
     def root(self):
-        """Return a MergedOptions prefixed to this path"""
+        """Return a MergedOptions looking at the root of the storage"""
         return self.__class__(
               ""
             , storage=self.storage
@@ -268,7 +378,16 @@ class MergedOptions(dict, Mapping):
             )
 
     def wrapped(self):
-        """Return a MergedOptions with this inside"""
+        """
+        Return a MergedOptions with this inside
+
+        Equivalent to:
+
+        .. code-block:: python
+
+            m = MergedOptions.using("a")
+            wrapped = MergedOptions.using(m, converters=m.converters, dont_prefix=m.dont_prefix)
+        """
         return self.__class__.using(self, converters=self.converters, dont_prefix=self.dont_prefix)
 
     def keys(self, ignore_converters=False):
@@ -283,7 +402,7 @@ class MergedOptions(dict, Mapping):
 
     @versioned_iterable
     def values(self):
-        """Return the values"""
+        """Return the values in the MergedOptions."""
         for key in self.keys():
             yield self[key]
 
@@ -324,11 +443,29 @@ class MergedOptions(dict, Mapping):
             self.converters.append(converter)
 
     def install_converters(self, converters, make_converter):
+        """
+        For each specified converter, make a converter function and install
+        a converter for that name.
+
+        .. code-block:: python
+
+            def make_converter(name, transformer):
+                def convert(path, val):
+                    return transformer(val)
+                return convert
+
+            m = MergedOptions.using({"a": 1, "b": 2})
+            m.install_converters({"a": lambda v: v+1, "b": lambda v: v*2}, make_converter)
+            m.converters.activate()
+
+            assert m['a'] == 2
+            assert m['b'] == 4
+        """
         for name, spec in converters.items():
             convert = make_converter(name, spec)
             self.add_converter(Converter(convert=convert, convert_path=[name]))
 
     def as_dict(self, key="", ignore_converters=True, seen=None, ignore=None):
-        """Return this key as a single dictionary"""
+        """Collapse the storage at this prefix into a single dictionary"""
         return self.storage.as_dict(self.converted_path(key, ignore_converters=ignore_converters), seen=seen, ignore=ignore)
 

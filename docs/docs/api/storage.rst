@@ -1,0 +1,5 @@
+.. _storage:
+
+Storage
+=======
+

@@ -4,6 +4,8 @@ Option Merge
 This provides the `option_merge.MergedOptions` class, which allows you to treat
 multiple python dictionaries as one.
 
+Documentation can be found at http://option-merge.readthedocs.org/
+
 Usage
 -----
 
@@ -27,7 +29,7 @@ And a separate override with `__setitem__` syntax:
 
     options['a'] = 1
     options['b.c'] = 2
-    options['b']['d'] = 3
+    options['b'] = {"d": 3}
     options[['b', 'e']] = 4
 
     options.as_dict() == {"a": 1, "b.c": 2, "b": {"d": 3, "e": 4}}

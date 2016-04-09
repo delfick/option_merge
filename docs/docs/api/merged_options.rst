@@ -16,7 +16,23 @@ a MergedOptions object.
 
 .. automethod:: option_merge.MergedOptions.Attributes
 
+    This is way of extracting attributes from an object and creating a
+    MergedOptions from that:
+
+    .. code-block:: python
+
+        obj = type("obj", (object, ), {"one": "two", "two": "three", "four": "five"})
+        result = MergedOptions.Attributes(obj, ("one", "four"), lift="global")
+        assertEqual(as_dict(), {"global": {"one": "two", "four": "five"}})
+
 .. automethod:: option_merge.MergedOptions.KeyValuePairs
+
+    This allows us to create a MergedOptions from (key, value) pairs.
+
+    .. code-block:: python
+
+        result = MergedOptions.KeyValuePairs([(["one"], "two"), (["three", "four"], "five")])
+        assertEqual(result.as_dict(), {"one": "two", "three": {"four": "five"}})
 
 Instance Methods
 ----------------

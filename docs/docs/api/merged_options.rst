@@ -3,8 +3,7 @@
 MergedOptions
 =============
 
-MergedOptions is a cursor into a ``Storage`` object and is the object that
-users should be interacting with.
+.. automodule:: option_merge.merge
 
 Instantition
 ------------

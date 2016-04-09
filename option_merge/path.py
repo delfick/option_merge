@@ -4,6 +4,9 @@ converters that are available to use.
 
 We are able to use this to store a reference to the root of the configuration
 as well as whether the converters should be ignored or not.
+
+It's purpose is to behave like a string regardless of whether it is a string
+or a list of strings.
 """
 
 from option_merge.joiner import dot_joiner, join
@@ -15,13 +18,18 @@ class Path(object):
     """
     Encapsulate a path; a root configuration; a list of converters; and whether
     the converters should be used or not
+
+    A path may be just a string or a list of strings.
     """
     @classmethod
     def convert(kls, path, configuration=None, converters=None, ignore_converters=None, joined=None):
         """
         Get us a Path object from this path
 
-        If already a Path object, then return a clone of the path
+        If path is already a Path instance, it is returned as is.
+
+        Otherwise, a joined version of the string is created and used,
+        along with the other kwargs to this function, to produce a new Path instance
         """
         path_type = type(path)
         if path_type is Path:
@@ -43,15 +51,25 @@ class Path(object):
         self.ignore_converters = ignore_converters
 
     def __unicode__(self):
+        """alias for self.joined"""
         return self.joined()
 
     def __str__(self):
+        """alias for self.joined"""
         return self.joined()
 
     def __nonzero__(self):
+        """Whether we have any path or not"""
         return any(self.path)
 
     def __len__(self):
+        """
+        The length of our path
+
+        * If we have no path, then 0
+        * if path is a string, then 1
+        * if path is an array, then the length of the array
+        """
         if self.path_is_string:
             if self.path:
                 return 1
@@ -64,6 +82,7 @@ class Path(object):
             return len(self.path)
 
     def __iter__(self):
+        """Iterate through the parts of our path"""
         if self.path_is_string:
             if self.path:
                 yield self.path
@@ -75,6 +94,10 @@ class Path(object):
         return "<Path({0})>".format(str(self))
 
     def __eq__(self, other):
+        """
+        Compare the joined version of this path
+        and the joined version of the other path
+        """
         joined = self.joined()
         if not other and not joined:
             return True
@@ -85,18 +108,26 @@ class Path(object):
         return False
 
     def __ne__(self, other):
+        """Negation of whether other is equal to this path"""
         return not self.__eq__(other)
 
     def __add__(self, other):
+        """Create a copy of this path joined with other"""
         if not other:
             return self.clone()
         else:
             return self.using(join(self, other))
 
     def __hash__(self):
+        """The hash of the joined version of this path"""
         return hash(self.joined())
 
     def __getitem__(self, key):
+        """
+        If the path is a string, treat it as a list of that one string,
+        otherwise, treat path as it is
+        and get the index of the path as specified by key
+        """
         path = self.path
         if self.path_is_string:
             path = [path]

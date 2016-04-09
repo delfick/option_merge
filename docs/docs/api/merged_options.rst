@@ -42,6 +42,11 @@ Instance Methods
               , get, source_for, values_for, as_dict, wrapped, values, keys, items
               , add_converter, install_converters
 
-    .. note:: the options into MergedOptions should be ignored and left to the
-     internals of option_merge.
+    .. note:: When instantiating a MergedOptions directly, it's recommended the
+      only option you specify is ``dont_prefix`` which is a list of types that you
+      want to be treated as concrete values instead of being converted into a
+      MergedOptions dictionary.
+
+      This is necessary for subtypes of dictionaries or anything that returns
+      True from ``is_dict``.
 

@@ -11,4 +11,3 @@ Api
     formatter
     converter
     collector
-    versioning

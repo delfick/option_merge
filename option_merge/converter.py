@@ -5,6 +5,23 @@ This functionality is assisted by the Converter and Converters classes.
 
 Converter is used to encapsulate a single converter, and converters is used to
 group together multiple converters.
+
+Usage is through the MergedOptions object, which has an instance of
+Converters on it.
+
+.. code-block:: python
+
+    m = MergedOptions.using({"a": 1})
+    converter = Converter(convert=lambda p, v: v+1, convert_path=['a'])
+    m.add_converter(converter)
+
+    assert m['a'] == 1
+    m.converters.activate()
+    assert m['a'] == 2
+    assert m['a'] == 2
+
+Note that the converters must be activated before use and subsequent calls to
+converted paths will use a cached result.
 """
 
 from option_merge.versioning import versioned_value

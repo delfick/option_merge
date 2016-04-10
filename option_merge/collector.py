@@ -1,6 +1,64 @@
 """
 The collector object is responsible for collecting configuration
 and setting up converters
+
+For example:
+
+.. code-block:: python
+
+    class JsonCollector(Collector):
+        def start_configuration(self):
+            return MergedOptions()
+
+        def find_missing_config(self, configuration):
+            assert "important_option" in configuration
+
+        def extra_prepare(self, configuration, args_dict):
+            configuration.update(
+                  {"some_option": args_dict["some_option"]}
+                , source=<extra_prepare>
+                )
+
+        def read_file(self, location):
+            return json.loads(location)
+
+        def add_configuration(self, configuration, collect_another_source, done, result, src):
+            configuration.update(result, source=src)
+            for loc in result.get("others", []):
+                collect_another_source(
+                      os.path.join(os.path.dirname(src), loc)
+                    , prefix=os.path.splitext(loc)[1]
+                    )
+
+        def extra_configuration_collection(self, configuration):
+            def convert(p, v):
+                return v * 2
+            configuration.add_converter(
+                  Converter(
+                      convert=convert
+                    , convert_path=["some", "contrived", "example"]
+                    )
+                )
+
+    collector = JsonCollector()
+    collector.prepare(
+          "/path/to/first_config_file.json"
+        , {"some_option": "stuff"}
+        )
+
+    #### /path/to/first_config_file.json
+    # { "hello": "there"
+    # , "others": ["some.json"]
+    # }
+
+    #### /path/to/some.json
+    # { "contrived":
+    #   { "example": 2
+    #   }
+    # }
+
+    collector.configuration["some_option"] == "stuff"
+    collector.configuration["some.contrived.example"] == 4
 """
 
 from option_merge.versioning import VersionedDict
@@ -13,6 +71,10 @@ import os
 log = logging.getLogger("option_merge.collector")
 
 class Collector(object):
+    """
+    When using the Collector, it is expected that you implement a number of hooks
+    to make this class useful.
+    """
     BadFileErrorKls = DelfickError
     BadConfigurationErrorKls = DelfickError
 
@@ -62,6 +124,7 @@ class Collector(object):
     ########################
 
     def clone(self, *args, **kwargs):
+        """Create a new collector that is a clone of this one"""
         if not hasattr(self, "configuration_file"):
             return self.__class__()
         new_collector = self.__class__()
@@ -71,7 +134,16 @@ class Collector(object):
         return new_collector
 
     def prepare(self, configuration_file, args_dict):
-        """Do the bespin stuff"""
+        """
+        Prepare the collector!
+
+        * Collect all the configuration
+        * find missing configuration
+        * Add getpass, collector and args_dict to the configuration
+        * do self.extra_prepare
+        * Activate the converters
+        * Do self.extra_prepare_after_activation
+        """
         self.configuration_file = configuration_file
         self.configuration = self.collect_configuration(configuration_file)
 

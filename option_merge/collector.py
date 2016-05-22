@@ -171,7 +171,10 @@ class Collector(object):
 
         configuration = self.start_configuration()
 
-        sources = [configuration_file]
+        sources = []
+        if configuration_file:
+            sources.append(configuration_file)
+
         home_dir_configuration = self.home_dir_configuration_location()
         if home_dir_configuration:
             sources.insert(0, home_dir_configuration)

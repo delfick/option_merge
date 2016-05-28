@@ -139,23 +139,14 @@ class Collector(object):
 
         * Collect all the configuration
         * find missing configuration
-        * Add getpass, collector and args_dict to the configuration
         * do self.extra_prepare
         * Activate the converters
         * Do self.extra_prepare_after_activation
         """
         self.configuration_file = configuration_file
-        self.configuration = self.collect_configuration(configuration_file)
+        self.configuration = self.collect_configuration(configuration_file, args_dict)
 
         self.find_missing_config(self.configuration)
-
-        self.configuration.update(
-            { "getpass": getpass
-            , "collector": self
-            , "args_dict": args_dict
-            }
-        , source = "<preparation>"
-        )
 
         self.extra_prepare(self.configuration, args_dict)
         self.configuration.converters.activate()
@@ -165,11 +156,19 @@ class Collector(object):
     ###   CONFIG
     ########################
 
-    def collect_configuration(self, configuration_file):
+    def collect_configuration(self, configuration_file, args_dict):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
 
         configuration = self.start_configuration()
+
+        configuration.update(
+              { "getpass": getpass
+              , "collector": self
+              , "args_dict": args_dict
+              }
+            , source = "<preparation>"
+            )
 
         sources = []
         if configuration_file:

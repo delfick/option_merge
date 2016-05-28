@@ -64,8 +64,9 @@ describe TestCase, "Collector":
             self.assertEqual(original_args_dict, {"a": 1, "b": 2})
 
     describe "prepare":
-        it "find_missing_config, updates configuration, does extra_prepare, activates converters and extra_prepare_after_activation":
+        it "find_missing_config, configuration, does extra_prepare, activates converters and extra_prepare_after_activation":
             called = []
+            args_dict = mock.Mock(name="args_dict")
             with self.fake_config('{"one": 1}') as (config_root, config_file):
                 class Col(Collector):
                     def start_configuration(self): return MergedOptions.using({})
@@ -74,17 +75,18 @@ describe TestCase, "Collector":
 
                     def find_missing_config(slf, config):
                         called.append((1, config))
-                        self.assertEqual(config.as_dict(), {"config_root": config_root, "one": 1})
+                        self.assertEqual(config.as_dict(), {"config_root": config_root, "one": 1, "getpass": getpass, "collector": slf, "args_dict": args_dict})
                         config.converters = mock.Mock(name="converters")
 
                     def extra_prepare(slf, config, args_dict):
                         called.append((2, config, args_dict))
                         self.assertEqual(config.as_dict()
-                            , { "getpass": getpass
+                            , { "config_root": config_root
+                              , "one": 1
                               , "collector": slf
                               , "args_dict": args_dict
                               , "config_root": config_root
-                              , "one": 1
+                              , "getpass": getpass
                               }
                             )
                         self.assertEqual(len(config.converters.mock_calls), 0)
@@ -96,13 +98,13 @@ describe TestCase, "Collector":
                 collector = Col()
                 self.assertEqual(called, [])
 
-                args_dict = mock.Mock(name="args_dict")
                 collector.prepare(config_file, args_dict)
                 self.assertEqual(called, [(1, collector.configuration), (2, collector.configuration, args_dict), (3, collector.configuration, args_dict)])
 
     describe "Collecting configuration":
         it "uses start_configuration, read_file, home_dir_configuration, config_file, add_configuration and extra_configuration_collection":
             called = []
+            args_dict = mock.Mock(name="args_dict")
             configuration = MergedOptions.using({})
 
             result_home_dir = mock.MagicMock(name="result_home_dir")
@@ -133,7 +135,7 @@ describe TestCase, "Collector":
                         called.append((4, config))
 
                 collector = Col()
-                collector.collect_configuration(config_file)
+                collector.collect_configuration(config_file, args_dict)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, home_dir)
@@ -146,6 +148,7 @@ describe TestCase, "Collector":
 
         it "ignores home_dir if it's not specified":
             called = []
+            args_dict = mock.Mock(name="args_dict")
             configuration = MergedOptions.using({})
 
             result_config_file = mock.MagicMock(name="result_config_file")
@@ -170,7 +173,7 @@ describe TestCase, "Collector":
                         called.append((4, config))
 
                 collector = Col()
-                collector.collect_configuration(config_file)
+                collector.collect_configuration(config_file, args_dict)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
@@ -181,6 +184,7 @@ describe TestCase, "Collector":
 
         it "gives a function for adding more sources to add_configuration":
             called = []
+            args_dict = mock.Mock(name="args_dict")
             configuration = MergedOptions.using({})
 
             with self.fake_config() as (config_root, config_file):
@@ -213,7 +217,7 @@ describe TestCase, "Collector":
                         called.append((4, config))
 
                 collector = Col()
-                collector.collect_configuration(config_file)
+                collector.collect_configuration(config_file, args_dict)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
@@ -228,6 +232,7 @@ describe TestCase, "Collector":
 
         it "Can't create a circular loop using collect_another_source":
             called = []
+            args_dict = mock.Mock(name="args_dict")
             configuration = MergedOptions.using({})
 
             with self.fake_config() as (config_root, config_file):
@@ -255,7 +260,7 @@ describe TestCase, "Collector":
                         called.append((4, config))
 
                 collector = Col()
-                collector.collect_configuration(config_file)
+                collector.collect_configuration(config_file, args_dict)
                 self.assertEqual(called
                     , [ (1, )
                       , (2, config_file)
@@ -271,6 +276,7 @@ describe TestCase, "Collector":
             class BadConfiguration(DelfickError): pass
 
             called = []
+            args_dict = mock.Mock(name="args_dict")
             with self.fake_config() as (config_root, config_file):
                 home_dir = os.path.join(config_root, 'home.json')
                 with open(home_dir, "w") as fle:
@@ -288,6 +294,6 @@ describe TestCase, "Collector":
 
                 with self.fuzzyAssertRaisesError(BadConfiguration, "Some of the configuration was broken", _errors=[BadJson(location=home_dir), BadJson(location=config_file)]):
                     collector = Col()
-                    collector.collect_configuration(config_file)
+                    collector.collect_configuration(config_file, args_dict)
                 self.assertEqual(called, [0, (1, home_dir), (1, config_file), 2])
 

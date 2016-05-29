@@ -78,9 +78,15 @@ class Collector(object):
     BadFileErrorKls = DelfickError
     BadConfigurationErrorKls = DelfickError
 
+    def __init__(self):
+        self.setup()
+
     ########################
     ###   HOOKS
     ########################
+
+    def setup(self):
+        """Called at __init__ time"""
 
     def alter_clone_args_dict(self, new_collector, new_args_dict, *args, **kwargs):
         """Hook for altering args_dict given to a clone collector"""

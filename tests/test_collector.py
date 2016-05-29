@@ -4,7 +4,6 @@ from option_merge.collector import Collector
 from option_merge import MergedOptions
 
 from delfick_error import DelfickErrorTestMixin, DelfickError
-from noseOfYeti.tokeniser.support import noy_sup_setUp
 from contextlib import contextmanager
 from getpass import getpass
 import tempfile
@@ -29,6 +28,17 @@ describe TestCase, "Collector":
         finally:
             if root and os.path.exists(root):
                 shutil.rmtree(root)
+
+    describe "__init__":
+        it "calls setup":
+            called = []
+            class C(Collector):
+                def setup(self):
+                    called.append(1)
+
+            self.assertEqual(called, [])
+            C()
+            self.assertEqual(called, [1])
 
     describe "Cloning":
         it "returns an instance that has rerun collect_configuration and prepare":

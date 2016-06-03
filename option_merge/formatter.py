@@ -4,6 +4,8 @@ formatter that can format strings using a MergedOptions object.
 
 .. code-block:: python
 
+    from delfick_error import DelfickError
+
     class BadOptionFormat(DelfickError): pass
 
     class MyFormatter(MergedOptionStringFormatter):

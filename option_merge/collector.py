@@ -62,8 +62,8 @@ For example:
 """
 
 from option_merge.versioning import VersionedDict
+from option_merge.converter import Converter
 
-from delfick_error import DelfickError
 from getpass import getpass
 import logging
 import os
@@ -75,8 +75,23 @@ class Collector(object):
     When using the Collector, it is expected that you implement a number of hooks
     to make this class useful.
     """
-    BadFileErrorKls = DelfickError
-    BadConfigurationErrorKls = DelfickError
+    class BadFileErrorKls(Exception):
+        _fake_delfick_error = True
+        def __init__(self, message):
+            self.message = message
+            self.kwargs = {}
+        def __str__(self):
+            return "BadFile: {0}".format(self.message)
+
+    class BadConfigurationErrorKls(Exception):
+        _fake_delfick_error = True
+        def __init__(self, _errors):
+            self.message = ""
+            self.kwargs = {}
+            self.errors = _errors
+        def __str__(self):
+            message = "errors:\n=======\n\n\t{0}".format("\n\t".join("{0}\n-------".format('\n\t'.join(str(error).split('\n'))) for error in self.errors))
+            return "BadConfiguration:\n{0}".format(message)
 
     def __init__(self):
         self.setup()

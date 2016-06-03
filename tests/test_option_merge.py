@@ -1,7 +1,7 @@
 # coding: spec
 
 from option_merge import (
-      MergedOptions, BadPrefix
+      MergedOptions
     , ConverterProperty, KeyValuePairsConverter, AttributesConverter
     )
 from option_merge.converter import Converter

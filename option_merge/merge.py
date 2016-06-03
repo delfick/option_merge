@@ -17,15 +17,11 @@ from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
 from option_merge.path import Path
 
-from delfick_error import DelfickError
 from collections import Mapping
 import logging
 import six
 
 log = logging.getLogger("option_merge.merge")
-
-class BadPrefix(DelfickError): pass
-"""Used to say a prefix value is not a dictionary"""
 
 class KeyValuePairsConverter(object):
     """Converts a list of key,value pairs to a dictionary"""

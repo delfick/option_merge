@@ -40,6 +40,12 @@ describe TestCase, "Collector":
             C()
             self.assertEqual(called, [1])
 
+    # describe "register_addons":
+    #     """Tested in tests/test_addons"""
+    #
+    # describe "register_converters":
+    #     """tested in tests/test_addons"""
+
     describe "Cloning":
         it "returns an instance that has rerun collect_configuration and prepare":
             called = []

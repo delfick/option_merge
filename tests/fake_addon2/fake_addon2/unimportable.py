@@ -1,0 +1,2 @@
+import wasdf
+wasdf = wasdf

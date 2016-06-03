@@ -19,7 +19,7 @@ class dictobj(object):
                 assert sorted(val.keys()) == sorted(["specs", "addons"])
                 specs = self.kls.specs.spec.normalise(Meta(val, []).at('specs'), val["specs"])
                 addons = self.kls.addons.spec.normalise(Meta(val, []).at("addons"), val["addons"])
-                return type("Result", (self.kls, ), {"specs": specs, "addons": addons})
+                return type("Result", (self.kls, ), {"specs": specs, "addons": addons})()
         FieldSpec = FieldSpecProperty(FieldSpec)
 
     class Field(object):

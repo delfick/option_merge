@@ -90,6 +90,7 @@ log = logging.getLogger("option_merge.addons")
 class Result(dictobj.Spec):
     specs = dictobj.Field(lambda: sb.dictof(sb.tupleof(sb.integer_spec(), sb.tuple_spec(sb.string_spec())), sb.has("normalise")))
     addons = dictobj.Field(sb.string_spec, wrapper=sb.listof)
+    post_register = dictobj.Field(sb.any_spec, default=lambda *args, **kwargs:None)
 
 class Addon(object):
     class NoSuchAddon(Exception):
@@ -134,8 +135,7 @@ class Addon(object):
             log.info("Found {0} addon".format(entry_point_name))
 
         def result_maker(**data):
-            meta = Meta(data, [])
-            return Result.FieldSpec().normalise(meta, data)
+            return Result.FieldSpec().normalise(Meta(data, []), data)
 
         for entry_point in entry_points:
             try:

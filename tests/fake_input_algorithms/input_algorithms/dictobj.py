@@ -1,3 +1,4 @@
+from input_algorithms.spec_base import NotSpecified, defaulted
 from input_algorithms.meta import Meta
 
 class FieldSpecProperty(object):
@@ -16,18 +17,20 @@ class dictobj(object):
                 self.formatter = formatter
 
             def normalise(self, meta, val):
-                assert sorted(val.keys()) == sorted(["specs", "addons"])
-                specs = self.kls.specs.spec.normalise(Meta(val, []).at('specs'), val["specs"])
-                addons = self.kls.addons.spec.normalise(Meta(val, []).at("addons"), val["addons"])
-                return type("Result", (self.kls, ), {"specs": specs, "addons": addons})()
+                specs = self.kls.specs.spec.normalise(Meta(val, []).at('specs'), val.get("specs", NotSpecified))
+                addons = self.kls.addons.spec.normalise(Meta(val, []).at("addons"), val.get("addons", NotSpecified))
+                post_register = self.kls.post_register.spec.normalise(Meta(val, []).at("post_register"), val.get("post_register", NotSpecified))
+                return type("Result", (self.kls, ), {"specs": specs, "addons": addons, "post_register": post_register})()
         FieldSpec = FieldSpecProperty(FieldSpec)
 
     class Field(object):
-        def __init__(self, spec, wrapper=None):
+        def __init__(self, spec, wrapper=None, default=NotSpecified):
             self.spec = spec
             if callable(self.spec):
                 self.spec = self.spec()
             self.wrapper = wrapper
             if wrapper is not None:
                 self.spec = wrapper(self.spec)
+            if default is not NotSpecified:
+                self.spec = defaulted(self.spec, default)
 

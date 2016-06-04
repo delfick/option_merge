@@ -2,9 +2,29 @@ import six
 
 class BadSpecValue(Exception): pass
 
+class NotSpecified(object):
+    @classmethod
+    def items(kls):
+        return []
+
 class Spec(object):
     def normalise(self, meta, val):
         raise NotImplementedError()
+
+class defaulted(Spec):
+    def __init__(self, spec, default):
+        self.spec = spec
+        self.default = default
+
+    def normalise(self, meta, val):
+        if val is NotSpecified:
+            return self.default
+        else:
+            return self.spec.normalise(meta, val)
+
+class any_spec(Spec):
+    def normalise(self, meta, val):
+        return val
 
 class dictof(Spec):
     def __init__(self, name_spec, value_spec):
@@ -42,7 +62,7 @@ class integer_spec(Spec):
 class string_spec(Spec):
     def normalise(self, meta, val):
         if not isinstance(val, six.string_types):
-            raise BadSpecValue("Expected a string")
+            raise BadSpecValue("Expected a string\tGot={0}".format(val))
         return val
 
 class has(Spec):
@@ -60,6 +80,8 @@ class listof(Spec):
         self.spec = spec
 
     def normalise(self, meta, val):
+        if val is NotSpecified:
+            return []
         if type(val) is not list:
-            val = [val]
+            val = []
         return [self.spec.normalise(meta, v) for v in val]

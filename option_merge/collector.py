@@ -178,23 +178,25 @@ class Collector(object):
         self.configuration.converters.activate()
         self.extra_prepare_after_activation(self.configuration, args_dict)
 
-    def register_addons(self, AddonGetter, addons, Meta, configuration):
+        for addon, result, kwargs in getattr(self, "registered_addons", []):
+            result.post_register(self.configuration, **kwargs)
+
+    def register_addons(self, AddonGetter, addons, Meta, configuration, **kwargs):
         """
         Resolve and add addons into the configuration.
 
         Addons should be a list of strings to entry_points at option_merge.addons
         """
-        found = set()
+        self.registered_addons = getattr(self, "registered_addons", [])
+
         def register(adns):
             moar = []
             for addon in adns:
-                if addon in found:
-                    log.warning("Trying to register the same addon again\taddon={0}".format(addon))
+                if addon in [name for name in self.registered_addons]:
                     continue
-                else:
-                    found.add(addon)
 
-                for result in AddonGetter.get(addon):
+                for result in AddonGetter.get(addon, configuration, **kwargs):
+                    self.registered_addons.insert(0, (addon, result, kwargs))
                     self.register_converters(result.specs, Meta, configuration)
                     moar.extend(result.addons)
             return moar

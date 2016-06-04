@@ -10,6 +10,7 @@ setup(
         [ "fake1 = fake_addon"
         , "same = fake_addon.same"
         , "badresult = fake_addon.badresult"
+        , "working = fake_addon.working"
         ]
       }
     )

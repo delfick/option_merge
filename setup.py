@@ -1,9 +1,8 @@
 from setuptools import setup, find_packages
-from option_merge import VERSION
 
 setup(
       name = "option_merge"
-    , version = VERSION
+    , version = "1.2"
     , packages = ['option_merge'] + ['option_merge.%s' % pkg for pkg in find_packages('option_merge')]
     , include_package_data = True
 

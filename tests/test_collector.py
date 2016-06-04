@@ -46,6 +46,64 @@ describe TestCase, "Collector":
     # describe "register_converters":
     #     """tested in tests/test_addons"""
 
+    describe "register_addons":
+        it "calls register on each layer till no more layers":
+            specs_one, specs_two = mock.Mock(name="specs_one"), mock.Mock(name="specs_two")
+            specs_three, specs_four = mock.Mock(name="specs_three"), mock.Mock(name="specs_four")
+
+            addon_one_result = mock.Mock(name="addon_one", specs=specs_one, addons=["three"])
+            addon_two_result = mock.Mock(name="addon_two", specs=specs_two, addons=["four"])
+            addon_three_result = mock.Mock(name="addon_three", specs=specs_three, addons=[])
+            addon_four_result = mock.Mock(name="addon_four", specs=specs_four, addons=[])
+
+            FakeAddon = mock.Mock(name="FakeAddon")
+            FakeAddon.get.side_effect = lambda name : [{"one": addon_one_result, "two": addon_two_result, "three": addon_three_result, "four": addon_four_result}[name]]
+
+            FakeMeta = mock.Mock(name="Meta")
+
+            fake_register_converters = mock.Mock(name="register_converters")
+
+            collector = Collector()
+            configuration = MergedOptions()
+
+            with mock.patch("option_merge.addons.Addon", FakeAddon):
+                with mock.patch.object(collector, "register_converters", fake_register_converters):
+                    collector.register_addons(["one", "two"], FakeMeta, configuration)
+
+            self.assertEqual(fake_register_converters.mock_calls
+                , [ mock.call(specs_one, FakeMeta, configuration)
+                  , mock.call(specs_two, FakeMeta, configuration)
+                  , mock.call(specs_three, FakeMeta, configuration)
+                  , mock.call(specs_four, FakeMeta, configuration)
+                  ]
+                )
+
+    describe "register_converters":
+        it "adds converters":
+            meta = mock.Mock(name='meta')
+            Meta = mock.Mock(name="Meta", return_value=meta)
+
+            configuration = MergedOptions.using({"one": 1, "two": 2, "three": 3})
+
+            spec1 = mock.Mock(name="spec1")
+            spec1.normalise.return_value = "ONE"
+
+            spec2 = mock.Mock(name="spec2")
+            spec2.normalise.return_value = "TWO"
+
+            specs = {(0, ("one", )): spec1, (0, ("two", )): spec2}
+
+            collector = Collector()
+            collector.register_converters(specs, Meta, configuration)
+            configuration.converters.activate()
+
+            self.assertEqual(configuration["one"], "ONE")
+            self.assertEqual(configuration["two"], "TWO")
+            self.assertEqual(configuration["three"], 3)
+
+            spec1.normalise.assert_called_once_with(meta.at("one"), 1)
+            spec2.normalise.assert_called_once_with(meta.at("two"), 2)
+
     describe "Cloning":
         it "returns an instance that has rerun collect_configuration and prepare":
             called = []

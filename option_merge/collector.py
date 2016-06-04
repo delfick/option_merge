@@ -173,6 +173,62 @@ class Collector(object):
         self.configuration.converters.activate()
         self.extra_prepare_after_activation(self.configuration, args_dict)
 
+    def register_addons(self, addons, Meta, configuration):
+        """
+        Resolve and add addons into the configuration.
+
+        Addons should be a list of strings to entry_points at option_merge.addons
+        """
+        from option_merge.addons import Addon
+
+        found = set()
+        def register(adns):
+            moar = []
+            for addon in adns:
+                if addon in found:
+                    log.warning("Trying to register the same addon again\taddon={0}".format(addon))
+                    continue
+                else:
+                    found.add(addon)
+
+                for result in Addon.get(addon):
+                    self.register_converters(result.specs, Meta, configuration)
+                    moar.extend(result.addons)
+            return moar
+
+        nxt = addons
+        while True:
+            nxt = register(nxt)
+            if not nxt:
+                break
+
+    def register_converters(self, specs, Meta, configuration):
+        """
+        Register converters
+
+        specs
+            a Dictionary of {(priority, [path]): spec}
+
+        Meta
+            The class to instantiate to create ``meta``
+
+            The converter will call ``spec.normalise(meta, val)``
+
+        configuration
+            The configuration to add the converter to
+        """
+        for (_, key), spec in sorted(specs.items()):
+            def make_converter(k, s):
+                def converter(p, v):
+                    log.info("Converting %s", p)
+                    meta = Meta(p.configuration, [])
+                    for kk in k:
+                        meta = meta.at(kk)
+                    configuration.converters.started(p)
+                    return s.normalise(meta, v)
+                configuration.add_converter(Converter(convert=converter, convert_path=k))
+            make_converter(key, spec)
+
     ########################
     ###   CONFIG
     ########################

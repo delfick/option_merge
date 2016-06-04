@@ -173,14 +173,12 @@ class Collector(object):
         self.configuration.converters.activate()
         self.extra_prepare_after_activation(self.configuration, args_dict)
 
-    def register_addons(self, addons, Meta, configuration):
+    def register_addons(self, AddonGetter, addons, Meta, configuration):
         """
         Resolve and add addons into the configuration.
 
         Addons should be a list of strings to entry_points at option_merge.addons
         """
-        from option_merge.addons import Addon
-
         found = set()
         def register(adns):
             moar = []
@@ -191,7 +189,7 @@ class Collector(object):
                 else:
                     found.add(addon)
 
-                for result in Addon.get(addon):
+                for result in AddonGetter.get(addon):
                     self.register_converters(result.specs, Meta, configuration)
                     moar.extend(result.addons)
             return moar

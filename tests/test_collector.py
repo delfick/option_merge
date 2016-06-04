@@ -40,12 +40,6 @@ describe TestCase, "Collector":
             C()
             self.assertEqual(called, [1])
 
-    # describe "register_addons":
-    #     """Tested in tests/test_addons"""
-    #
-    # describe "register_converters":
-    #     """tested in tests/test_addons"""
-
     describe "register_addons":
         it "calls register on each layer till no more layers":
             specs_one, specs_two = mock.Mock(name="specs_one"), mock.Mock(name="specs_two")
@@ -66,9 +60,8 @@ describe TestCase, "Collector":
             collector = Collector()
             configuration = MergedOptions()
 
-            with mock.patch("option_merge.addons.Addon", FakeAddon):
-                with mock.patch.object(collector, "register_converters", fake_register_converters):
-                    collector.register_addons(["one", "two"], FakeMeta, configuration)
+            with mock.patch.object(collector, "register_converters", fake_register_converters):
+                collector.register_addons(FakeAddon, ["one", "two"], FakeMeta, configuration)
 
             self.assertEqual(fake_register_converters.mock_calls
                 , [ mock.call(specs_one, FakeMeta, configuration)

@@ -110,6 +110,7 @@ describe TestCase, "Collector":
                     def alter_clone_args_dict(slf, nw_cllctr, nw_args_dict, new_args):
                         nw_args_dict.update(new_args)
                         called.append((1, nw_cllctr, nw_args_dict))
+                        return nw_args_dict
 
                 collector = Col()
                 collector.prepare(config_file, original_args_dict)

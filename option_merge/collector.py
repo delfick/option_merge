@@ -104,7 +104,12 @@ class Collector(object):
         """Called at __init__ time"""
 
     def alter_clone_args_dict(self, new_collector, new_args_dict, *args, **kwargs):
-        """Hook for altering args_dict given to a clone collector"""
+        """
+        Hook for altering args_dict given to a clone collector it must return a dictionary
+
+        This dictionary will be used in the ``prepare`` call for the new collector
+        """
+        return new_args_dict
 
     def find_missing_config(self, configuration):
         """Hook to raise errors about missing configuration"""
@@ -149,8 +154,8 @@ class Collector(object):
         if not hasattr(self, "configuration_file"):
             return self.__class__()
         new_collector = self.__class__()
-        new_args_dict = dict(self.configuration["args_dict"].items())
-        self.alter_clone_args_dict(new_collector, new_args_dict, *args, **kwargs)
+        args_dict_clone = dict(self.configuration["args_dict"].items())
+        new_args_dict = self.alter_clone_args_dict(new_collector, args_dict_clone, *args, **kwargs)
         new_collector.prepare(self.configuration_file, new_args_dict)
         return new_collector
 

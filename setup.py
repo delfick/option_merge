@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
       name = "option_merge"
-    , version = "1.0"
+    , version = "1.1"
     , packages = ['option_merge'] + ['option_merge.%s' % pkg for pkg in find_packages('option_merge')]
     , include_package_data = True
 

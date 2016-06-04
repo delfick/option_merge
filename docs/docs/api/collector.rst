@@ -20,3 +20,6 @@ Usage
 
 .. automethod:: option_merge.collector.Collector.clone
 
+.. automethod:: option_merge.collector.Collector.register_addons
+
+.. automethod:: option_merge.collector.Collector.register_converters

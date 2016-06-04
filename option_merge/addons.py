@@ -1,3 +1,69 @@
+"""
+Option Merge now gives you the ability to extend your program using "generic"
+option_merge addons.
+
+An Option Merge addon is a module with a ``__option_merge__`` hook and is
+registered under the ``option_merge.addons`` pkg_resources entry_point.
+
+Then, as the application developer, you must have ``input_algorithms>=0.5``
+in your application's dependencies and you may use ``Collector#register_addons``
+to register the addons you wish to use.
+
+So, let's build an addon!::
+
+    addon/
+        my_option_merge_addon.py
+        setup.py
+
+my_option_merge_addon
+    .. code-block:: python
+
+        from input_algorithms import spec_base as sb
+
+        def __option_merge__(configuration, result_maker, **kwargs):
+            specs = {
+                ((0, ("one", )): sb.integer_spec()
+              }
+            return result_maker(specs=specs, addons=[])
+
+setup.py
+    .. code-block:: python
+
+        from setuptools import setup
+
+        setup(
+              name = "my_option_merge_addon"
+            , version = "0.1"
+            , packages = ['my_option_merge_addon']
+
+            , entry_points =
+              { "option_merge.addons":
+                [ "mine = my_option_merge_addon"
+                ]
+              }
+            )
+
+Now as long as we have pip installed this addon, we can do something like:
+
+.. code-block:: python
+
+    from option_merge.collector import Collector
+    from option_merge import MergedOptions
+    from option_merge.addons import Addon
+
+    from input_algorithms.meta import Meta
+
+    configuration = MergedOptions.using({"one": "1"})
+    Collector().register_addons(Addon, ["mine"], Meta, configuration)
+
+    assert configuration["one"] == 1
+
+Please see http://input-algorithms.readthedocs.io for more information about
+how input_algorithms works.
+
+Essentially your addon must use the passed in ``result_maker`` to return specs
+to add to the configuration and additional ``addons`` to load.
+"""
 def find_input_algorithms(package="input_algorithms", version=">=0.5"):
     try:
         __import__(package)

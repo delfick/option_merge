@@ -11,3 +11,4 @@ Api
     formatter
     converter
     collector
+    addons

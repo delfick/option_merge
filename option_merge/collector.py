@@ -178,7 +178,7 @@ class Collector(object):
         self.configuration.converters.activate()
         self.extra_prepare_after_activation(self.configuration, args_dict)
 
-    def register_converters(self, specs, Meta, configuration):
+    def register_converters(self, specs, Meta, configuration, NotSpecified):
         """
         Register converters
 
@@ -203,6 +203,8 @@ class Collector(object):
                     configuration.converters.started(p)
                     return s.normalise(meta, v)
                 configuration.add_converter(Converter(convert=converter, convert_path=k))
+                if k not in configuration:
+                    configuration[k] = NotSpecified
             make_converter(key, spec)
 
     ########################

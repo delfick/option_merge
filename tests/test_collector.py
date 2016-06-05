@@ -44,8 +44,9 @@ describe TestCase, "Collector":
         it "adds converters":
             meta = mock.Mock(name='meta')
             Meta = mock.Mock(name="Meta", return_value=meta)
+            NotSpecified = mock.Mock(name="NotSpecified")
 
-            configuration = MergedOptions.using({"one": 1, "two": 2, "three": 3})
+            configuration = MergedOptions.using({"two": 2, "three": 3})
 
             spec1 = mock.Mock(name="spec1")
             spec1.normalise.return_value = "ONE"
@@ -56,14 +57,14 @@ describe TestCase, "Collector":
             specs = {(0, ("one", )): spec1, (0, ("two", )): spec2}
 
             collector = Collector()
-            collector.register_converters(specs, Meta, configuration)
+            collector.register_converters(specs, Meta, configuration, NotSpecified)
             configuration.converters.activate()
 
             self.assertEqual(configuration["one"], "ONE")
             self.assertEqual(configuration["two"], "TWO")
             self.assertEqual(configuration["three"], 3)
 
-            spec1.normalise.assert_called_once_with(meta.at("one"), 1)
+            spec1.normalise.assert_called_once_with(meta.at("one"), NotSpecified)
             spec2.normalise.assert_called_once_with(meta.at("two"), 2)
 
     describe "Cloning":

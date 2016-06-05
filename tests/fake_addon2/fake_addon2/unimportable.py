@@ -1,2 +1,0 @@
-import wasdf
-wasdf = wasdf

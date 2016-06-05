@@ -2,10 +2,8 @@
 
 from option_merge.collector import Collector
 from option_merge import MergedOptions
-from option_merge.addons import Addon
 
 from delfick_error import DelfickErrorTestMixin, DelfickError
-from input_algorithms.meta import Meta
 from contextlib import contextmanager
 from getpass import getpass
 import tempfile
@@ -41,40 +39,6 @@ describe TestCase, "Collector":
             self.assertEqual(called, [])
             C()
             self.assertEqual(called, [1])
-
-    describe "register_addons":
-        it "calls register on each layer till no more layers":
-            specs_one, specs_two = mock.Mock(name="specs_one"), mock.Mock(name="specs_two")
-            specs_three, specs_four = mock.Mock(name="specs_three"), mock.Mock(name="specs_four")
-
-            addon_one_result = mock.Mock(name="addon_one", specs=specs_one, addons=["three"])
-            addon_two_result = mock.Mock(name="addon_two", specs=specs_two, addons=["four"])
-            addon_three_result = mock.Mock(name="addon_three", specs=specs_three, addons=[])
-            addon_four_result = mock.Mock(name="addon_four", specs=specs_four, addons=[])
-
-            FakeAddon = mock.Mock(name="FakeAddon")
-            FakeAddon.get.side_effect = lambda name, configuration: [{"one": addon_one_result, "two": addon_two_result, "three": addon_three_result, "four": addon_four_result}[name]]
-
-            FakeMeta = mock.Mock(name="Meta")
-
-            fake_register_converters = mock.Mock(name="register_converters")
-
-            collector = Collector()
-            configuration = MergedOptions()
-
-            with mock.patch.object(collector, "register_converters", fake_register_converters):
-                collector.register_addons(FakeAddon, ["one", "two"], FakeMeta, configuration)
-
-            self.assertEqual(fake_register_converters.mock_calls
-                , [ mock.call(specs_one, FakeMeta, configuration)
-                  , mock.call(specs_two, FakeMeta, configuration)
-                  , mock.call(specs_three, FakeMeta, configuration)
-                  , mock.call(specs_four, FakeMeta, configuration)
-                  ]
-                )
-
-            # Make sure the addons are registered
-            self.assertEqual(collector.registered_addons, [("four", addon_four_result, {}), ("three", addon_three_result, {}), ("two", addon_two_result, {}), ("one", addon_one_result, {})])
 
     describe "register_converters":
         it "adds converters":
@@ -140,17 +104,15 @@ describe TestCase, "Collector":
         it "find_missing_config, configuration, does extra_prepare, activates converters and extra_prepare_after_activation":
             called = []
             args_dict = mock.Mock(name="args_dict")
-            with self.fake_config('{"one": 1, "addons": ["working"]}') as (config_root, config_file):
+            with self.fake_config('{"one": 1}') as (config_root, config_file):
                 class Col(Collector):
                     def start_configuration(self): return MergedOptions.using({})
                     def read_file(self, location): return json.load(open(location))
-                    def add_configuration(self, configuration, collect_another_source, done, result, src):
-                        configuration.update(result)
-                        self.register_addons(Addon, result.get("addons", []), Meta, configuration)
+                    def add_configuration(self, configuration, collect_another_source, done, result, src): configuration.update(result)
 
                     def find_missing_config(slf, config):
                         called.append((1, config))
-                        self.assertEqual(config.as_dict(), {"addons": ["working"], "config_root": config_root, "one": 1, "getpass": getpass, "collector": slf, "args_dict": args_dict})
+                        self.assertEqual(config.as_dict(), {"config_root": config_root, "one": 1, "getpass": getpass, "collector": slf, "args_dict": args_dict})
                         config.converters = mock.Mock(name="converters")
 
                     def extra_prepare(slf, config, args_dict):
@@ -158,7 +120,6 @@ describe TestCase, "Collector":
                         self.assertEqual(config.as_dict()
                             , { "config_root": config_root
                               , "one": 1
-                              , "addons": ["working"]
                               , "collector": slf
                               , "args_dict": args_dict
                               , "getpass": getpass
@@ -169,13 +130,11 @@ describe TestCase, "Collector":
                     def extra_prepare_after_activation(slf, config, args_dict):
                         called.append((3, config, args_dict))
                         config.converters.activate.assert_called_once_with()
-                        assert "injected" not in config
 
                 collector = Col()
-                self.assertEqual(called, [])
 
+                self.assertEqual(called, [])
                 collector.prepare(config_file, args_dict)
-                self.assertEqual(collector.configuration["injected"], True)
                 self.assertEqual(called, [(1, collector.configuration), (2, collector.configuration, args_dict), (3, collector.configuration, args_dict)])
 
     describe "Collecting configuration":

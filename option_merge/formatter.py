@@ -141,8 +141,9 @@ class MergedOptionStringFormatter(string.Formatter):
             is_dict = type(obj) in (VersionedDict, MergedOptions) or isinstance(obj, dict)
             is_a_mock = hasattr(obj, 'mock_calls')
             is_special_type = any(isinstance(obj, typ) for typ in (types.LambdaType, types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.BuiltinMethodType))
+            is_formattable = getattr(obj, '_merged_options_formattable', False)
 
-            if is_dict or is_special_type or is_a_mock:
+            if is_dict or is_special_type or is_a_mock or is_formattable:
                 return obj
             else:
                 return super(MergedOptionStringFormatter, self).format_field(obj, format_spec)

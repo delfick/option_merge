@@ -159,7 +159,7 @@ class Collector(object):
         new_collector.prepare(self.configuration_file, new_args_dict)
         return new_collector
 
-    def prepare(self, configuration_file, args_dict):
+    def prepare(self, configuration_file, args_dict, extra_files=None):
         """
         Prepare the collector!
 
@@ -170,7 +170,7 @@ class Collector(object):
         * Do self.extra_prepare_after_activation
         """
         self.configuration_file = configuration_file
-        self.configuration = self.collect_configuration(configuration_file, args_dict)
+        self.configuration = self.collect_configuration(configuration_file, args_dict, extra_files=extra_files)
 
         self.find_missing_config(self.configuration)
 
@@ -211,7 +211,7 @@ class Collector(object):
     ###   CONFIG
     ########################
 
-    def collect_configuration(self, configuration_file, args_dict):
+    def collect_configuration(self, configuration_file, args_dict, extra_files=None):
         """Return us a MergedOptions with this configuration and any collected configurations"""
         errors = []
 
@@ -228,6 +228,9 @@ class Collector(object):
         sources = []
         if configuration_file:
             sources.append(configuration_file)
+
+        if extra_files:
+            sources.extend(extra_files)
 
         home_dir_configuration = self.home_dir_configuration_location()
         if home_dir_configuration:

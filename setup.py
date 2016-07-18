@@ -8,6 +8,7 @@ setup(
 
     , install_requires =
       [ 'six'
+      , 'delfick_error==1.7.3'
       ]
 
     , extras_require =
@@ -15,7 +16,6 @@ setup(
         [ "noseOfYeti>=1.4.9"
         , "nose"
         , "mock"
-        , 'delfick_error==1.7.3'
         ]
       }
 

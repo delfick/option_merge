@@ -16,8 +16,6 @@ from option_merge.joiner import dot_joiner
 from option_merge import helper as hp
 from option_merge.path import Path
 
-from delfick_error import ProgrammerError
-
 class DataPath(object):
     """
     Encapsulates a (path, data, source) triplet and getting keys and values from
@@ -135,7 +133,7 @@ class Storage(object):
     def add(self, path, data, source=None):
         """Add data at the beginning"""
         if not isinstance(path, Path):
-            raise ProgrammerError("Path should be a Path object\tgot={0}".format(type(path)))
+            raise Exception("Path should be a Path object\tgot={0}".format(type(path)))
         self._version += 1
         self.data.insert(0, (path, VersionedDict.convert(data), source))
 

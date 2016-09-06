@@ -44,6 +44,11 @@ import six
 class NotSpecified(object):
     """The difference between None and not specified"""
 
+class NoFormat(object):
+    """Used to tell when to stop formatting a string"""
+    def __init__(self, val):
+        self.val = val
+
 class MergedOptionStringFormatter(string.Formatter):
     """
     Resolve format options into a MergedOptions dictionary
@@ -66,6 +71,8 @@ class MergedOptionStringFormatter(string.Formatter):
         if val is NotSpecified:
             val = self.get_string(self.option_path)
 
+        if isinstance(val, NoFormat):
+            return val.val
         if not isinstance(val, six.string_types):
             return val
         return super(MergedOptionStringFormatter, self).format(val)
@@ -193,3 +200,6 @@ class MergedOptionStringFormatter(string.Formatter):
             return result[0]
         return ''.join(str(obj) for obj in result)
 
+    def no_format(self, val):
+        """Return an instance that is recognised by the formatter as no more formatting required"""
+        return NoFormat(val)

@@ -158,23 +158,16 @@ class Storage(object):
             if callable(info.source):
                 source = info.source()
 
-            if info.path == path and not info.is_dict:
-                if isinstance(source, list):
-                    return list(source)
-                elif source:
-                    return [source]
-            else:
-                if source not in sources:
-                    if source:
-                        if isinstance(source, list):
-                            sources.extend(source)
-                        else:
-                            sources.append(source)
+            if info.path == path:
+                if source not in sources and source:
+                    if isinstance(source, list):
+                        for s in source:
+                            if s not in sources:
+                                sources.append(s)
+                    else:
+                        sources.append(source)
 
-        if len(sources) == 1:
-            return sources[0]
-        else:
-            return sources
+        return sources
 
     def delete(self, path):
         """Delete the first instance of some path"""
@@ -223,7 +216,7 @@ class Storage(object):
 
         for info_path, data, source in self.data:
             for full_path, found_path, val in self.determine_path_and_val(path, info_path, data, source):
-                source = self.make_source_for_function(val, found_path, chain, default=source)
+                source = self.make_source_for_function(data, found_path, chain, default=source)
                 yield DataPath(full_path, val, source)
                 yielded = True
 
@@ -261,11 +254,11 @@ class Storage(object):
         except NotFound:
             pass
 
-    def make_source_for_function(self, obj, path, chain, default=None):
+    def make_source_for_function(self, data, path, chain, default=None):
         """Return us a function that will get the source for some path on the specified obj"""
         def source_for():
-            if hasattr(obj, "source_for"):
-                nxt = obj.source_for(path, chain)
+            if hasattr(data, "source_for"):
+                nxt = data.source_for(data.converted_path(path), chain)
                 if nxt:
                     return nxt
             return default

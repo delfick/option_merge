@@ -60,6 +60,53 @@ describe TestCase, "MergedOptions":
         self.assertIs(items["a"], 1)
         assert True, "It didn't reach maximum recursion depth"
 
+    describe "source_for":
+        it "works with a single layer of merged option":
+            options = MergedOptions()
+            options.update({"wat": 1}, source="a")
+            options.update({"yeap": {"blah": 3, "meh": 4}}, source="b")
+            options.update({"yeap": {"blah": 2}}, source="d")
+
+            self.assertEqual(options.source_for("wat"), ["a"])
+            self.assertEqual(options.source_for("yeap.blah"), ["d", "b"])
+            self.assertEqual(options.source_for("yeap.meh"), ["b"])
+
+        it "works with layered merged options":
+            options = MergedOptions()
+            options.update({"wat": 1}, source="a")
+            options.update({"yeap": {"blah": 3, "meh": 4}}, source="b")
+            options.update({"yeap": {"blah": 2}}, source="d")
+
+            options2 = MergedOptions()
+            options2.update({"thing": {"other": 10}}, source="e")
+
+            options3 = MergedOptions.using(options)
+            options3["place"] = options2
+
+            self.assertEqual(options3.source_for("wat"), ["a"])
+            self.assertEqual(options3.source_for("yeap.blah"), ["d", "b"])
+            self.assertEqual(options3.source_for("yeap.meh"), ["b"])
+            self.assertEqual(options3.source_for("place.thing.other"), ["e"])
+
+        it "works if one of the storage data is a prefixed merged options":
+            options = MergedOptions()
+            options.update({"wat": 1}, source="a")
+            options.update({"yeap": {"blah": 3, "meh": 4}}, source="b")
+            options.update({"yeap": {"blah": 2}}, source="d")
+
+            options2 = MergedOptions()
+            options2.update({"thing": {"other": 10}}, source="e")
+
+            options3 = MergedOptions.using(options)
+            options3["place"] = options2["thing"]
+
+            self.assertEqual(options3.source_for("wat"), ["a"])
+            self.assertEqual(options3.source_for("yeap.blah"), ["d", "b"])
+            self.assertEqual(options3.source_for("yeap.meh"), ["b"])
+
+            self.assertEqual(options2.source_for("thing.other"), ["e"])
+            self.assertEqual(options3.source_for("place.other"), ["e"])
+
     describe "Adding more options":
 
         it "has method for adding more options":

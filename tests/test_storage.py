@@ -342,7 +342,7 @@ describe TestCase, "Storage":
             get_info.assert_called_once_with(path)
 
     describe "Getting source":
-        it "returns first non dict data source":
+        it "returns all sources that contain the provided path":
             self.storage.add(Path(["a", "b", "c"]), d1, source=s1)
             self.storage.add(Path(["b", "c"]), d2, source=s5)
             self.storage.add(Path(["a", "b", "d"]), d3, source=s4)
@@ -361,10 +361,10 @@ describe TestCase, "Storage":
                   ]
                 )
 
-            self.assertEqual(self.storage.source_for(Path("a.b.c")), [s1])
-            self.assertEqual(self.storage.source_for(Path("a.b.c.d.e")), [s6])
+            self.assertEqual(self.storage.source_for(Path("a.b.c")), [s6, s5, s1])
+            self.assertEqual(self.storage.source_for(Path("a.b.c.d.e")), [s6, s5])
             self.assertEqual(self.storage.source_for(Path("a.b.c.d")), [s6, s5])
-            self.assertEqual(self.storage.source_for(Path("a.bd")), [s1])
+            self.assertEqual(self.storage.source_for(Path("a.bd")), [s1, s2])
             self.assertEqual(self.storage.source_for(Path("a.bd.1")), [s2])
 
     describe "keys_after":

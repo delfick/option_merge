@@ -11,7 +11,7 @@ With the ability to delete from the dictionary and the ability to convert values
 on access.
 """
 
-from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
+from option_merge.versioning import versioned_iterable, versioned_value
 from option_merge.converter import Converters, Converter
 from option_merge.not_found import NotFound
 from option_merge.joiner import dot_joiner
@@ -219,9 +219,7 @@ class MergedOptions(dict, Mapping):
 
             if any(isinstance(val, unprefixed) for unprefixed in self.dont_prefix):
                 return val
-            elif type(val) is VersionedDict and any(isinstance(val.data, unprefixed) for unprefixed in self.dont_prefix):
-                return val.data
-            elif type(val) in (dict, VersionedDict, MergedOptions) or isinstance(val, dict):
+            elif type(val) in (dict, MergedOptions) or isinstance(val, dict):
                 return self.prefixed(path, already_prefixed=True)
             else:
                 return val

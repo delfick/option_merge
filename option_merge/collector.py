@@ -61,7 +61,6 @@ For example:
     collector.configuration["some.contrived.example"] == 4
 """
 
-from option_merge.versioning import VersionedDict
 from option_merge.converter import Converter
 
 from getpass import getpass
@@ -249,9 +248,9 @@ class Collector(object):
 
             try:
                 if os.stat(src).st_size == 0:
-                    result = VersionedDict({})
+                    result = {}
                 else:
-                    result = VersionedDict(self.read_file(src))
+                    result = self.read_file(src)
             except self.BadFileErrorKls as error:
                 errors.append(error)
                 return
@@ -265,7 +264,7 @@ class Collector(object):
 
             while prefix:
                 part = prefix.pop()
-                result = VersionedDict({part: result})
+                result = {part: result}
 
             self.add_configuration(configuration, add_configuration, done, result, src)
 

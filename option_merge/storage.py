@@ -8,7 +8,7 @@ which can be used to get keys and values for some path.
 It is also used to get thesource for particular paths.
 """
 
-from option_merge.versioning import versioned_iterable, versioned_value, VersionedDict
+from option_merge.versioning import versioned_iterable, versioned_value
 from option_merge.merge import MergedOptions
 from option_merge.not_found import NotFound
 from option_merge.value_at import value_at
@@ -31,7 +31,7 @@ class DataPath(object):
     def is_dict(self):
         is_dict = getattr(self, "_is_dict", None)
         if is_dict is None:
-            is_dict = self._is_dict = type(self.data) in (dict, VersionedDict, MergedOptions) or isinstance(self.data, dict)
+            is_dict = self._is_dict = type(self.data) in (dict, MergedOptions) or isinstance(self.data, dict)
         return is_dict
 
     def items(self, prefix, want_one=False):
@@ -76,7 +76,7 @@ class DataPath(object):
                 yield "", data, []
                 return
 
-            if type(data) not in (dict, VersionedDict, MergedOptions) and getattr(data, "is_dict", False) is not True:
+            if type(data) not in (dict, MergedOptions) and getattr(data, "is_dict", False) is not True:
                 raise NotFound
 
             if not prefix:
@@ -135,7 +135,7 @@ class Storage(object):
         if not isinstance(path, Path):
             raise Exception("Path should be a Path object\tgot={0}".format(type(path)))
         self._version += 1
-        self.data.insert(0, (path, VersionedDict.convert(data), source))
+        self.data.insert(0, (path, data, source))
 
     def get(self, path):
         """Get a single value from a path"""
@@ -292,7 +292,7 @@ class Storage(object):
 
     def delete_from_data(self, data, path):
         """Delete this path from the data"""
-        if not path or (type(data) not in (dict, VersionedDict, MergedOptions) and not isinstance(data, dict)):
+        if not path or (type(data) not in (dict, MergedOptions) and not isinstance(data, dict)):
             return False
 
         keys = list(reversed(sorted(data.keys())))
@@ -325,7 +325,7 @@ class Storage(object):
                 prefixer = list(prefix)
                 while prefixer:
                     key = prefixer.pop()
-                    data = VersionedDict({key: data})
+                    data = {key: data}
 
             val = data
             used = None
@@ -350,7 +350,7 @@ class Storage(object):
                     path_without_prefix = path_without_prefix.without(dot_joiner(used))
 
             if found and path_without_prefix == "":
-                is_dict = lambda item: type(item) in (dict, VersionedDict, MergedOptions) or isinstance(item, dict)
+                is_dict = lambda item: type(item) in (dict, MergedOptions) or isinstance(item, dict)
                 if not is_dict(val):
                     result = val
                 else:

@@ -1,4 +1,3 @@
-from option_merge.versioning import VersionedDict
 from option_merge.merge import MergedOptions
 from option_merge.not_found import NotFound
 from option_merge.path import Path
@@ -16,7 +15,7 @@ def value_at(data, path, called_from=None, chain=None):
         return chain, data
 
     data_type = type(data)
-    if data_type not in (dict, VersionedDict, MergedOptions) and getattr(data, "is_dict", False) is not True:
+    if data_type not in (dict, MergedOptions) and getattr(data, "is_dict", False) is not True:
         raise NotFound
 
     joined = path.joined()

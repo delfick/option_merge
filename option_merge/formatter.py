@@ -34,7 +34,6 @@ formatter that can format strings using a MergedOptions object.
     assert formatted == "a.b: 3 and c=5"
 """
 
-from option_merge.versioning import VersionedDict
 from option_merge.merge import MergedOptions
 
 import string
@@ -145,7 +144,7 @@ class MergedOptionStringFormatter(string.Formatter):
         if special:
             return special
         else:
-            is_dict = type(obj) in (VersionedDict, MergedOptions) or isinstance(obj, dict)
+            is_dict = type(obj) is MergedOptions or isinstance(obj, dict)
             is_a_mock = hasattr(obj, 'mock_calls')
             is_special_type = any(isinstance(obj, typ) for typ in (types.LambdaType, types.FunctionType, types.MethodType, types.BuiltinFunctionType, types.BuiltinMethodType))
             is_formattable = getattr(obj, '_merged_options_formattable', False)

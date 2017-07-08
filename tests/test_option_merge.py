@@ -230,6 +230,28 @@ describe TestCase, "MergedOptions":
             thing.converters.activate()
             self.assertIs(thing["opts"], converted_val)
 
+        it "can return as is if the type is dict like but in dont_prefix":
+            class A(dict):
+                pass
+
+            class B(A):
+                pass
+
+            class C(dict):
+                pass
+
+            thing = MergedOptions(dont_prefix=[A])
+            a = A()
+            b = B()
+            c = C()
+            thing["one"] = a
+            thing["two"] = b
+            thing["three"] = c
+
+            self.assertIs(thing["one"], a)
+            self.assertIs(thing["two"], b)
+            self.assertEqual(type(thing["three"]), MergedOptions)
+
         it "can get items from inside a converter after a level of indirection":
             final = MergedOptions()
 

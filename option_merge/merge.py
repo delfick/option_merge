@@ -203,6 +203,8 @@ class MergedOptions(dict, Mapping):
 
             if any(isinstance(val, unprefixed) for unprefixed in self.dont_prefix):
                 return val
+            elif type(val) is VersionedDict and any(isinstance(val.data, unprefixed) for unprefixed in self.dont_prefix):
+                return val.data
             elif type(val) in (dict, VersionedDict, MergedOptions) or isinstance(val, dict):
                 return self.prefixed(path, already_prefixed=True)
             else:

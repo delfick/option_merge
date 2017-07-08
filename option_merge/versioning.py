@@ -150,7 +150,11 @@ class VersionedDict(object):
     """
     A wrapper for dictionaries that has a version property
 
-    The version starts at 0 and is incremented whenever __setitem__ or __delitem__ is used
+    The version starts at 0 and is incremented whenever __setitem__,  __delitem__ or update is used
+
+    Note that this only versions the top layer.
+
+    Changes to the values themselves will not cause the version to increase
     """
     @classmethod
     def convert(kls, item):

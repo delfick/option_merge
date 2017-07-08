@@ -108,6 +108,22 @@ class MergedOptions(dict, Mapping):
         merged['a']['b'] == 4
         merged['a']['c'] == 3
         merged['d'] == 7
+
+    You can also change deeply nested keys::
+
+        # You can get keys with "a.b" but setting them must separate the parts of the structure
+        merged[["a", "b"]] = 5
+        merged["a"].as_dict() == {"b": 5, "c": 3}
+
+    .. note:: MergedOptions uses a cache system to avoid having to repeatedly iterate
+      through the underlying data structures.
+
+      A side effect of this caching is that changes in the underlying structures won't
+      cause a cache invalidation in the MergedOptions object.
+
+      If you wish for changes to be made, make them on the MergedOptions object.
+      (Note that changing a merged options object is an additive operation and will not change
+      the underlying data)
     """
 
     Attributes = ConverterProperty(AttributesConverter)

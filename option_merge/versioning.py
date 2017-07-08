@@ -194,6 +194,7 @@ class VersionedDict(object):
         return self.data.values()
 
     def update(self, other):
+        self.version += 1
         self.data.update(other)
 
     def items(self):
@@ -219,4 +220,3 @@ class VersionedDict(object):
 
     def __unicode__(self):
         return self.data.__unicode__()
-

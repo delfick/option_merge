@@ -6,6 +6,11 @@ multiple python dictionaries as one.
 
 Documentation can be found at http://option-merge.readthedocs.org/
 
+Deprecated
+----------
+
+This project has been deprecated in favour of https://github.com/delfick/delfick_project
+
 Usage
 -----
 
